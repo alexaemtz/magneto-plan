@@ -1,65 +1,177 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import AppShell from '@/components/AppShell';
+import GanttChart from '@/components/GanttChart';
+import DailyIndicatorTable from '@/components/DailyIndicator';
+import AppointmentForm from '@/components/AppointmentForm';
+import { Appointment, DailyIndicator, Ramp } from '@/types';
+import { getAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
+import { getDailyIndicator } from '@/lib/firestore/indicators';
+import { todayISO, formatDate } from '@/lib/utils';
+import { Plus, RefreshCw, Trash2, Pencil } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const makeEmptyIndicator = (date: string): DailyIndicator => ({
+  date,
+  citadosServicio: { hoy: 0, realizado: 0, acumulado: 0 },
+  citadosServicioPlusOne: { hoy: 0, realizado: 0, acumulado: 0 },
+  citadosReparacion: { hoy: 0, realizado: 0, acumulado: 0 },
+  citadosRevision: { hoy: 0, realizado: 0, acumulado: 0 },
+  sinCita: { hoy: 0, realizado: 0, acumulado: 0 },
+  totalDia: 0,
+  ingresosTotal: 0,
+});
+
+export default function DashboardPage() {
+  const date = todayISO();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [indicator, setIndicator] = useState<DailyIndicator>(makeEmptyIndicator(date));
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editAppt, setEditAppt] = useState<Appointment | undefined>();
+  const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string>('08:00');
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [appts, ind] = await Promise.all([
+        getAppointmentsByDate(date),
+        getDailyIndicator(date),
+      ]);
+      setAppointments(appts);
+      setIndicator(ind ?? makeEmptyIndicator(date));
+    } catch (err) {
+      console.error('Error cargando dashboard:', err);
+      toast.error('Error al cargar los datos. Verifica la configuración de Firebase.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function handleSlotClick(ramp: Ramp | null, time: string, existing?: Appointment) {
+    if (existing) {
+      setEditAppt(existing);
+    } else {
+      setEditAppt(undefined);
+      setSelectedRamp(ramp);
+      setSelectedTime(time);
+    }
+    setShowForm(true);
+  }
+
+  async function handleDelete(appt: Appointment) {
+    if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
+    await deleteAppointment(appt.id!);
+    toast.success('Cita eliminada');
+    load();
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <AppShell>
+      <div className="px-6 py-6 space-y-6 max-w-screen-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{formatDate(date)}</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={load}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              Actualizar
+            </button>
+            <button
+              onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
+            >
+              <Plus size={16} />
+              Nueva cita
+            </button>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { label: 'Total del día', value: appointments.length, color: 'text-blue-600' },
+            { label: 'Completados', value: appointments.filter(a => a.status === 'COMPLETADO').length, color: 'text-green-600' },
+            { label: 'En proceso', value: appointments.filter(a => a.status === 'EN_PROCESO').length, color: 'text-amber-600' },
+            { label: 'No show', value: appointments.filter(a => a.status === 'NO_SHOW').length, color: 'text-red-600' },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+              <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Gantt */}
+        <div>
+          <h2 className="text-base font-semibold text-gray-700 mb-3">Magneto Plan — Hoy</h2>
+          {loading ? (
+            <div className="h-48 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} />
+          )}
+        </div>
+
+        {/* Indicator + list */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h2 className="text-base font-semibold text-gray-700 mb-3">Indicador de hoy</h2>
+            <DailyIndicatorTable indicator={indicator} onSave={setIndicator} />
+          </div>
+
+          <div>
+            <h2 className="text-base font-semibold text-gray-700 mb-3">Citas programadas ({appointments.length})</h2>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              {appointments.length === 0 ? (
+                <div className="py-12 text-center text-gray-400 text-sm">No hay citas para hoy</div>
+              ) : (
+                <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                  {appointments.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50">
+                      <div className="text-xs font-mono text-gray-500 w-10 shrink-0">{a.startTime}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{a.carModel} — {a.clientName}</p>
+                        <p className="text-xs text-gray-500 truncate">{a.serialNumber} | Asesor: {a.advisor}</p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => handleSlotClick(a.ramp, a.startTime, a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                          <Pencil size={14} />
+                        </button>
+                        <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showForm && (
+        <AppointmentForm
+          date={date}
+          initial={editAppt}
+          ramp={selectedRamp ?? undefined}
+          startTime={selectedTime}
+          onClose={() => setShowForm(false)}
+          onSaved={() => { setShowForm(false); load(); }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+    </AppShell>
   );
 }

@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function selfPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    // exists() + get() para el mismo path en la misma evaluación cuentan como
+    // una sola lectura (Firebase cachea dentro del request).
+    function isActive() {
+      return isAuth()
+          && exists(selfPath())
+          && get(selfPath()).data.active == true;
+    }
+
+    function isAdmin() {
+      return isActive()
+          && get(selfPath()).data.role == 'admin';
+    }
+
+    // ── Usuarios ──────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      // Lectura: propio doc o admin.
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
+
+      // Creación: solo el propio usuario (primer login).
+      allow create: if isAuth() && request.auth.uid == userId;
+
+      // Actualización:
+      //   • Propio usuario: puede actualizar cualquier campo EXCEPTO role y active.
+      //   • Admin: puede actualizar cualquier campo de cualquier usuario.
+      allow update: if isAuth() && (
+        (
+          request.auth.uid == userId &&
+          !request.resource.data.diff(resource.data)
+                             .affectedKeys()
+                             .hasAny(['role', 'active'])
+        ) || isAdmin()
+      );
+    }
+
+    // ── Catálogos: lectura para todos los activos, escritura solo admins ───────
+    match /advisors/{docId} {
+      allow read:  if isActive();
+      allow write: if isAdmin();
+    }
+
+    match /carModels/{docId} {
+      allow read:  if isActive();
+      allow write: if isAdmin();
+    }
+
+    // ── Datos operativos: todos los usuarios activos ───────────────────────────
+    match /appointments/{docId} {
+      allow read, write: if isActive();
+    }
+
+    match /dailyIndicators/{docId} {
+      allow read, write: if isActive();
+    }
+
+    match /pendingCases/{docId} {
+      allow read, write: if isActive();
+    }
+  }
+}
