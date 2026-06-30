@@ -20,6 +20,7 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   PROGRAMADO:          'Programado',
   EN_PROCESO:          'En proceso',
   COMPLETADO:          'Completado',
+  LAVADO:              'Lavado',
   NO_SHOW:             'No show',
   ESPERANDO_REFACCION: 'Esperando refacción',
 };
@@ -28,6 +29,7 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   PROGRAMADO:          'bg-blue-100 text-blue-700',
   EN_PROCESO:          'bg-amber-100 text-amber-700',
   COMPLETADO:          'bg-green-100 text-green-700',
+  LAVADO:              'bg-sky-100 text-sky-600',
   NO_SHOW:             'bg-gray-100 text-gray-500',
   ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700',
 };
