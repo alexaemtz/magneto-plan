@@ -31,7 +31,7 @@ function isValidToken(token: string): boolean {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname.startsWith('/login');
   const rawToken = request.cookies.get('fb-auth-token')?.value;

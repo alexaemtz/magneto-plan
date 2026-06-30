@@ -160,7 +160,7 @@ export default function DashboardPage() {
           ramp={selectedRamp ?? undefined}
           startTime={selectedTime}
           onClose={() => setShowForm(false)}
-          onSaved={() => { setShowForm(false); load(); }}
+          onSaved={() => setShowForm(false)}
         />
       )}
     </AppShell>
