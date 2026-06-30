@@ -6,38 +6,32 @@ import GanttChart from '@/components/GanttChart';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentTable from '@/components/AppointmentTable';
 import { Appointment, Ramp } from '@/types';
-import { getAppointmentsByDate } from '@/lib/firestore/appointments';
+import { subscribeToAppointmentsByDate } from '@/lib/firestore/appointments';
 import { todayISO, formatDate } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Plus, RefreshCw, LayoutGrid, Table2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 type Tab = 'gantt' | 'tabla';
 
 export default function GanttPage() {
-  const [date, setDate]                     = useState(todayISO());
-  const [appointments, setAppointments]     = useState<Appointment[]>([]);
-  const [loading, setLoading]               = useState(true);
-  const [showForm, setShowForm]             = useState(false);
-  const [editAppt, setEditAppt]             = useState<Appointment | undefined>();
-  const [selectedRamp, setSelectedRamp]     = useState<Ramp | null>(null);
-  const [selectedTime, setSelectedTime]     = useState('08:00');
-  const [activeTab, setActiveTab]           = useState<Tab>('gantt');
+  const [date, setDate]                 = useState(todayISO());
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [showForm, setShowForm]         = useState(false);
+  const [editAppt, setEditAppt]         = useState<Appointment | undefined>();
+  const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
+  const [selectedTime, setSelectedTime] = useState('08:00');
+  const [activeTab, setActiveTab]       = useState<Tab>('gantt');
 
-  async function load(d: string, force = false) {
+  useEffect(() => {
     setLoading(true);
-    try {
-      const appts = await getAppointmentsByDate(d, force);
+    const unsub = subscribeToAppointmentsByDate(date, (appts) => {
       setAppointments(appts);
-    } catch (err) {
-      console.error('Error cargando citas:', err);
-      toast.error('Error al cargar las citas. Verifica los permisos de Firestore.');
-    } finally {
       setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(date); }, [date]);
+    });
+    return unsub; // unsubscribes when date changes or component unmounts
+  }, [date]);
 
   function shiftDay(n: number) {
     const d = new Date(date + 'T12:00:00');
@@ -54,6 +48,12 @@ export default function GanttPage() {
       setSelectedTime(time);
     }
     setShowForm(true);
+  }
+
+  function handleSaved() {
+    setShowForm(false);
+    // No manual reload needed — onSnapshot updates automatically
+    toast.success(editAppt ? 'Cita actualizada' : 'Cita creada');
   }
 
   return (
@@ -85,14 +85,6 @@ export default function GanttPage() {
             </div>
 
             <button
-              onClick={() => load(date, true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-            >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-              Actualizar
-            </button>
-
-            <button
               onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
             >
@@ -113,9 +105,7 @@ export default function GanttPage() {
               onClick={() => setActiveTab('gantt')}
               className={cn(
                 'flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold transition-colors',
-                activeTab === 'gantt'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-50',
+                activeTab === 'gantt' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50',
               )}
             >
               <LayoutGrid size={13} />
@@ -125,9 +115,7 @@ export default function GanttPage() {
               onClick={() => setActiveTab('tabla')}
               className={cn(
                 'flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold transition-colors border-l border-gray-200',
-                activeTab === 'tabla'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-50',
+                activeTab === 'tabla' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50',
               )}
             >
               <Table2 size={13} />
@@ -154,13 +142,12 @@ export default function GanttPage() {
             <AppointmentTable
               appointments={appointments}
               date={date}
-              onRefresh={() => load(date, true)}
+              onRefresh={() => {}} // no-op: onSnapshot keeps data fresh automatically
             />
           )
         )}
       </div>
 
-      {/* New/edit appointment form (Gantt tab) */}
       {showForm && (
         <AppointmentForm
           date={date}
@@ -169,7 +156,7 @@ export default function GanttPage() {
           startTime={selectedTime}
           existingAppointments={appointments}
           onClose={() => setShowForm(false)}
-          onSaved={() => { setShowForm(false); load(date, true); }}
+          onSaved={handleSaved}
         />
       )}
     </AppShell>

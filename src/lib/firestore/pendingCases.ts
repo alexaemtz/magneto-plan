@@ -5,6 +5,7 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  onSnapshot,
   query,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -14,6 +15,19 @@ import { cacheGet, cacheSet, cacheInvalidate, TTL } from '@/lib/cache';
 
 const COL = 'pendingCases';
 const KEY = 'pending-cases';
+
+/** Real-time subscription for all pending cases. Returns the unsubscribe function. */
+export function subscribeToPendingCases(
+  onChange: (cases: PendingCase[]) => void,
+): () => void {
+  return onSnapshot(query(collection(db, COL)), (snap) => {
+    const result = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as PendingCase))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    cacheSet(KEY, result);
+    onChange(result);
+  });
+}
 
 export async function getPendingCases(): Promise<PendingCase[]> {
   const cached = cacheGet<PendingCase[]>(KEY, TTL.DAY_CURRENT);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';
 import { PendingCase } from '@/types';
-import { getPendingCases, createPendingCase, updatePendingCase, deletePendingCase } from '@/lib/firestore/pendingCases';
+import { subscribeToPendingCases, createPendingCase, updatePendingCase, deletePendingCase } from '@/lib/firestore/pendingCases';
 import { todayISO, isoToDisplay } from '@/lib/utils';
 import { Plus, Trash2, Pencil, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -29,19 +29,14 @@ export default function CasosPendientesPage() {
   const [form, setForm] = useState<Omit<PendingCase, 'id'>>({ ...EMPTY });
   const [saving, setSaving] = useState(false);
 
-  async function load() {
+  useEffect(() => {
     setLoading(true);
-    try {
-      setCases(await getPendingCases());
-    } catch (err) {
-      console.error('Error cargando casos pendientes:', err);
-      toast.error('Error al cargar los casos. Verifica los permisos de Firestore.');
-    } finally {
+    const unsub = subscribeToPendingCases((data) => {
+      setCases(data);
       setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
+    });
+    return unsub;
+  }, []);
 
   function openNew() {
     setEditCase(null);
@@ -67,7 +62,7 @@ export default function CasosPendientesPage() {
         toast.success('Caso creado');
       }
       setShowForm(false);
-      load();
+      // No manual reload — onSnapshot reflects changes automatically
     } catch {
       toast.error('Error al guardar');
     } finally {
@@ -79,13 +74,11 @@ export default function CasosPendientesPage() {
     if (!confirm(`¿Eliminar caso de ${c.clientName}?`)) return;
     await deletePendingCase(c.id!);
     toast.success('Caso eliminado');
-    load();
   }
 
   async function toggleStatus(c: PendingCase) {
     const newStatus = c.status === 'ENTREGADO' ? 'PENDIENTE' : 'ENTREGADO';
     await updatePendingCase(c.id!, { status: newStatus });
-    load();
   }
 
   const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400';

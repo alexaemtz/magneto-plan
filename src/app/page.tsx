@@ -6,10 +6,10 @@ import GanttChart from '@/components/GanttChart';
 import DailyIndicatorTable from '@/components/DailyIndicator';
 import AppointmentForm from '@/components/AppointmentForm';
 import { Appointment, DailyIndicator, Ramp } from '@/types';
-import { getAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
+import { subscribeToAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
 import { getDailyIndicator } from '@/lib/firestore/indicators';
 import { todayISO, formatDate } from '@/lib/utils';
-import { Plus, RefreshCw, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const makeEmptyIndicator = (date: string): DailyIndicator => ({
@@ -33,24 +33,22 @@ export default function DashboardPage() {
   const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('08:00');
 
-  async function load() {
+  useEffect(() => {
     setLoading(true);
-    try {
-      const [appts, ind] = await Promise.all([
-        getAppointmentsByDate(date),
-        getDailyIndicator(date),
-      ]);
+    // Appointments: real-time subscription
+    const unsub = subscribeToAppointmentsByDate(date, (appts) => {
       setAppointments(appts);
-      setIndicator(ind ?? makeEmptyIndicator(date));
-    } catch (err) {
-      console.error('Error cargando dashboard:', err);
-      toast.error('Error al cargar los datos. Verifica la configuración de Firebase.');
-    } finally {
       setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
+    });
+    // Indicator: one-off read with localStorage cache (changes once per day)
+    getDailyIndicator(date)
+      .then((ind) => setIndicator(ind ?? makeEmptyIndicator(date)))
+      .catch((err) => {
+        console.error('Error cargando indicador:', err);
+        toast.error('Error al cargar los datos. Verifica la configuración de Firebase.');
+      });
+    return unsub;
+  }, [date]);
 
   function handleSlotClick(ramp: Ramp | null, time: string, existing?: Appointment) {
     if (existing) {
@@ -67,7 +65,7 @@ export default function DashboardPage() {
     if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
     await deleteAppointment(appt.id!);
     toast.success('Cita eliminada');
-    load();
+    // No manual reload — onSnapshot reflects the deletion automatically
   }
 
   return (
@@ -80,13 +78,6 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500 mt-0.5">{formatDate(date)}</p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={load}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-            >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-              Actualizar
-            </button>
             <button
               onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"

@@ -6,6 +6,7 @@ import {
   deleteDoc,
   getDocs,
   getDoc,
+  onSnapshot,
   query,
   where,
   serverTimestamp,
@@ -24,6 +25,19 @@ function invalidateDate(date: string) {
 
 function sortByTime(appts: Appointment[]): Appointment[] {
   return appts.sort((a, b) => a.startTime.localeCompare(b.startTime));
+}
+
+/** Real-time subscription for a single day. Returns the unsubscribe function. */
+export function subscribeToAppointmentsByDate(
+  date: string,
+  onChange: (appts: Appointment[]) => void,
+): () => void {
+  const q = query(collection(db, COL), where('date', '==', date));
+  return onSnapshot(q, (snap) => {
+    const result = sortByTime(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Appointment)));
+    cacheSet(apptKey(date), result); // keep cache in sync for conflict detection
+    onChange(result);
+  });
 }
 
 export async function getAppointmentsByDate(date: string, force = false): Promise<Appointment[]> {
