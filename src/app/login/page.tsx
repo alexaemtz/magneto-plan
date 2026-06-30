@@ -5,8 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Wrench } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getRedirectResult } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
   const { signIn, signInWithGoogle, user } = useAuth();
@@ -19,13 +17,6 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) router.replace('/');
   }, [user, router]);
-
-  // Show error if Google redirect returns with a failure
-  useEffect(() => {
-    getRedirectResult(auth).catch(() => {
-      toast.error('No se pudo iniciar sesión con Google');
-    });
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

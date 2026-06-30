@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import {
   User,
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   onIdTokenChanged,
@@ -112,8 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    await signInWithRedirect(auth, googleProvider);
-    // Page navigates away — never reaches here on success
+    await signInWithPopup(auth, googleProvider);
   };
 
   const signOut = async () => {
