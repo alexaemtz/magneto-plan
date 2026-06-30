@@ -6,7 +6,7 @@ import GanttChart from '@/components/GanttChart';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentTable from '@/components/AppointmentTable';
 import { Appointment, Ramp } from '@/types';
-import { subscribeToAppointmentsByDate } from '@/lib/firestore/appointments';
+import { subscribeToAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
 import { todayISO, formatDate } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -52,8 +52,13 @@ export default function GanttPage() {
 
   function handleSaved() {
     setShowForm(false);
-    // No manual reload needed — onSnapshot updates automatically
     toast.success(editAppt ? 'Cita actualizada' : 'Cita creada');
+  }
+
+  async function handleDelete(appt: Appointment) {
+    if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
+    await deleteAppointment(appt.id!);
+    toast.success('Cita eliminada');
   }
 
   return (
@@ -131,7 +136,7 @@ export default function GanttPage() {
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} />
+            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} onDelete={handleDelete} />
           )
         ) : (
           loading ? (

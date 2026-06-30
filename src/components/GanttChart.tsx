@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import { Appointment, AppointmentStatus, Ramp } from '@/types';
 import {
   generateTimeSlots,
@@ -14,6 +15,7 @@ interface GanttChartProps {
   appointments: Appointment[];
   date: string;
   onSlotClick?: (ramp: Ramp | null, time: string, existing?: Appointment) => void;
+  onDelete?: (appt: Appointment) => void;
 }
 
 const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
@@ -41,7 +43,7 @@ const STATUS_DOT: Record<AppointmentStatus, string> = {
 const SLOT_WIDTH = 80; // px per 30-min slot
 const ROW_HEIGHT = 56; // px
 
-export default function GanttChart({ appointments, date, onSlotClick }: GanttChartProps) {
+export default function GanttChart({ appointments, date, onSlotClick, onDelete }: GanttChartProps) {
   const [tooltip, setTooltip] = useState<{ appt: Appointment; x: number; y: number } | null>(null);
 
   const slots = useMemo(() => generateTimeSlots('07:00', '19:00', 30), []);
@@ -145,9 +147,9 @@ export default function GanttChart({ appointments, date, onSlotClick }: GanttCha
 
                   if (occupant) {
                     if (rendered.has(occupant.id!)) {
-                      return (
-                        <div key={t} style={{ width: SLOT_WIDTH, minWidth: SLOT_WIDTH }} className="shrink-0" />
-                      );
+                      // Zero-width — the rendered block already covers this slot visually.
+                      // A non-zero width here would misalign everything to the right.
+                      return <div key={t} style={{ width: 0 }} className="shrink-0" />;
                     }
                     rendered.add(occupant.id!);
                     const span = getSpan(occupant);
@@ -156,13 +158,22 @@ export default function GanttChart({ appointments, date, onSlotClick }: GanttCha
                         key={t}
                         style={{ width: SLOT_WIDTH * span, minWidth: SLOT_WIDTH * span }}
                         className={cn(
-                          'shrink-0 relative border-r border-white cursor-pointer rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden flex flex-col justify-center gap-0.5 hover:brightness-95 transition-all',
+                          'group shrink-0 relative border-r border-white cursor-pointer rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden flex flex-col justify-center gap-0.5 hover:brightness-95 transition-all',
                           SERVICE_COLORS_LIGHT[occupant.serviceType]
                         )}
                         onClick={() => onSlotClick?.(row.ramp, t, occupant)}
                         onMouseEnter={(e) => setTooltip({ appt: occupant, x: e.clientX, y: e.clientY })}
                         onMouseLeave={() => setTooltip(null)}
                       >
+                        {onDelete && (
+                          <button
+                            className="absolute top-0.5 right-0.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4 flex items-center justify-center rounded bg-black/15 hover:bg-red-500 hover:text-white text-current"
+                            onClick={(e) => { e.stopPropagation(); onDelete(occupant); }}
+                            title="Eliminar cita"
+                          >
+                            <X size={10} strokeWidth={2.5} />
+                          </button>
+                        )}
                         <div className="flex items-center gap-1 min-w-0">
                           <span className={cn('w-2 h-2 rounded-full shrink-0', STATUS_DOT[occupant.status])} />
                           <span className="text-xs font-semibold truncate">{occupant.carModel}</span>

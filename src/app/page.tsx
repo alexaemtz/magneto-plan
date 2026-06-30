@@ -111,7 +111,7 @@ export default function DashboardPage() {
               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} />
+            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} onDelete={handleDelete} />
           )}
         </div>
 
