@@ -78,14 +78,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // onIdTokenChanged fires on login, logout, AND token refresh (~every 55 min)
     const unsub = onIdTokenChanged(auth, async (u) => {
       if (u) {
+        // 1. Set the session cookie immediately — decoupled from Firestore.
+        //    A user authenticated in Firebase Auth always gets access;
+        //    Firestore Security Rules protect the data independently.
         try {
-          const [r, idToken] = await Promise.all([syncUserDoc(u), u.getIdToken()]);
-          setRole(r);
+          const idToken = await u.getIdToken();
           await persistSession(idToken);
         } catch (err) {
-          console.warn('Error sincronizando sesión:', err);
-          setRole('user');
+          console.warn('No se pudo establecer la sesión:', err);
         }
+
+        // 2. Sync Firestore user doc separately — failure here does not block login.
+        let role: Role = 'user';
+        try {
+          role = await syncUserDoc(u);
+        } catch (err) {
+          console.warn('Error sincronizando perfil en Firestore (verifica las Security Rules):', err);
+        }
+
+        setRole(role);
       } else {
         setRole(null);
         await clearSession();
