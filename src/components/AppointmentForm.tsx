@@ -318,6 +318,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
               <option value="PROGRAMADO">Programado</option>
               <option value="EN_PROCESO">En proceso</option>
               <option value="COMPLETADO">Completado</option>
+              <option value="LAVADO">Lavado</option>
               <option value="NO_SHOW">No show</option>
               <option value="ESPERANDO_REFACCION">Esperando refacción</option>
             </select>

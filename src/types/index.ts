@@ -11,7 +11,8 @@ export type AppointmentStatus =
   | 'EN_PROCESO'
   | 'COMPLETADO'
   | 'NO_SHOW'
-  | 'ESPERANDO_REFACCION';
+  | 'ESPERANDO_REFACCION'
+  | 'LAVADO';
 
 export type Ramp = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 

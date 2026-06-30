@@ -27,9 +27,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 const googleProvider = new GoogleAuthProvider();
 
+// In-memory cache: avoids re-reading the user doc on every token refresh (~55 min)
+const syncCache = new Map<string, { role: Role; ts: number }>();
+const SYNC_TTL = 5 * 60_000;
+
 async function syncUserDoc(u: User): Promise<Role> {
+  const cached = syncCache.get(u.uid);
+  if (cached && Date.now() - cached.ts < SYNC_TTL) return cached.role;
+
   const ref = doc(db, 'users', u.uid);
   const snap = await getDoc(ref);
+  let role: Role;
   if (!snap.exists()) {
     await setDoc(ref, {
       uid: u.uid,
@@ -40,10 +48,13 @@ async function syncUserDoc(u: User): Promise<Role> {
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
     });
-    return 'user';
+    role = 'user';
+  } else {
+    await setDoc(ref, { lastLoginAt: serverTimestamp() }, { merge: true });
+    role = (snap.data().role as Role) ?? 'user';
   }
-  await setDoc(ref, { lastLoginAt: serverTimestamp() }, { merge: true });
-  return (snap.data().role as Role) ?? 'user';
+  syncCache.set(u.uid, { role, ts: Date.now() });
+  return role;
 }
 
 async function persistSession(idToken: string) {
@@ -96,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     cacheClear();
-    // Clear session cookie immediately; onIdTokenChanged(null) will also call clearSession()
+    syncCache.clear();
     await Promise.all([firebaseSignOut(auth), clearSession()]);
   };
 

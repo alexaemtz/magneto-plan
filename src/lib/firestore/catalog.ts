@@ -5,7 +5,6 @@ import {
   updateDoc,
   getDocs,
   query,
-  where,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -22,17 +21,17 @@ const ADVISOR_KEY   = 'advisors';
 const ADVISOR_A_KEY = 'advisors:active';
 
 export async function getAdvisors(onlyActive = false): Promise<Advisor[]> {
-  const key = onlyActive ? ADVISOR_A_KEY : ADVISOR_KEY;
-  const cached = cacheGet<Advisor[]>(key, TTL.CATALOG);
-  if (cached) return cached;
-
-  const q = onlyActive
-    ? query(collection(db, 'advisors'), where('active', '==', true))
-    : query(collection(db, 'advisors'));
-  const snap = await getDocs(q);
-  const result = sortByName(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Advisor)));
-  cacheSet(key, result);
-  return result;
+  // Always read all advisors from one cache key; filter in memory for the active subset
+  let all = cacheGet<Advisor[]>(ADVISOR_KEY, TTL.CATALOG);
+  if (!all) {
+    const snap = await getDocs(query(collection(db, 'advisors')));
+    all = sortByName(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Advisor)));
+    cacheSet(ADVISOR_KEY, all);
+  }
+  if (!onlyActive) return all;
+  const active = all.filter((a) => a.active);
+  cacheSet(ADVISOR_A_KEY, active);
+  return active;
 }
 
 export async function createAdvisor(data: Omit<Advisor, 'id'>): Promise<string> {
@@ -55,17 +54,16 @@ const MODEL_KEY   = 'carModels';
 const MODEL_A_KEY = 'carModels:active';
 
 export async function getCarModels(onlyActive = false): Promise<CarModel[]> {
-  const key = onlyActive ? MODEL_A_KEY : MODEL_KEY;
-  const cached = cacheGet<CarModel[]>(key, TTL.CATALOG);
-  if (cached) return cached;
-
-  const q = onlyActive
-    ? query(collection(db, 'carModels'), where('active', '==', true))
-    : query(collection(db, 'carModels'));
-  const snap = await getDocs(q);
-  const result = sortByName(snap.docs.map((d) => ({ id: d.id, ...d.data() } as CarModel)));
-  cacheSet(key, result);
-  return result;
+  let all = cacheGet<CarModel[]>(MODEL_KEY, TTL.CATALOG);
+  if (!all) {
+    const snap = await getDocs(query(collection(db, 'carModels')));
+    all = sortByName(snap.docs.map((d) => ({ id: d.id, ...d.data() } as CarModel)));
+    cacheSet(MODEL_KEY, all);
+  }
+  if (!onlyActive) return all;
+  const active = all.filter((m) => m.active);
+  cacheSet(MODEL_A_KEY, active);
+  return active;
 }
 
 export async function createCarModel(data: Omit<CarModel, 'id'>): Promise<string> {

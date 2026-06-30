@@ -17,22 +17,24 @@ interface GanttChartProps {
 }
 
 const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
-  { label: 'RAMPA 1', ramp: 1, type: 'ramp' },
-  { label: 'RAMPA 2', ramp: 2, type: 'ramp' },
-  { label: 'RAMPA 3', ramp: 3, type: 'ramp' },
-  { label: 'RAMPA 4', ramp: 4, type: 'ramp' },
-  { label: 'RAMPA 5', ramp: 5, type: 'ramp' },
-  { label: 'RAMPA 6', ramp: 6, type: 'ramp' },
-  { label: 'RAMPA 7', ramp: 7, type: 'ramp' },
-  { label: 'NO SHOW', ramp: null, type: 'no_show' },
-  { label: 'LAVADO', ramp: null, type: 'wash' },
+  { label: 'RAMPA 1',  ramp: 1,    type: 'ramp'     },
+  { label: 'RAMPA 2',  ramp: 2,    type: 'ramp'     },
+  { label: 'RAMPA 3',  ramp: 3,    type: 'ramp'     },
+  { label: 'RAMPA 4',  ramp: 4,    type: 'ramp'     },
+  { label: 'RAMPA 5',  ramp: 5,    type: 'ramp'     },
+  { label: 'RAMPA 6',  ramp: 6,    type: 'ramp'     },
+  { label: 'RAMPA 7',  ramp: 7,    type: 'ramp'     },
+  { label: 'SIN RAMPA', ramp: null, type: 'no_ramp' },
+  { label: 'NO SHOW',  ramp: null, type: 'no_show'  },
+  { label: 'LAVADO',   ramp: null, type: 'wash'     },
 ];
 
 const STATUS_DOT: Record<AppointmentStatus, string> = {
-  PROGRAMADO: 'bg-gray-400',
-  EN_PROCESO: 'bg-green-500',
-  COMPLETADO: 'bg-blue-600',
-  NO_SHOW: 'bg-red-500',
+  PROGRAMADO:          'bg-gray-400',
+  EN_PROCESO:          'bg-green-500',
+  COMPLETADO:          'bg-blue-600',
+  LAVADO:              'bg-sky-400',
+  NO_SHOW:             'bg-red-500',
   ESPERANDO_REFACCION: 'bg-yellow-500',
 };
 
@@ -54,6 +56,8 @@ export default function GanttChart({ appointments, date, onSlotClick }: GanttCha
         map.get('NO SHOW')!.push(a);
       } else if (a.ramp) {
         map.get(`RAMPA ${a.ramp}`)!.push(a);
+      } else {
+        map.get('SIN RAMPA')!.push(a);
       }
     });
     return map;
@@ -117,17 +121,19 @@ export default function GanttChart({ appointments, date, onSlotClick }: GanttCha
               key={row.label}
               className={cn(
                 'flex border-b border-gray-100 group',
+                row.type === 'no_ramp' && 'bg-amber-50/40',
                 row.type === 'no_show' && 'bg-red-50/40',
-                row.type === 'wash' && 'bg-sky-50/40'
+                row.type === 'wash'    && 'bg-sky-50/40',
               )}
               style={{ height: ROW_HEIGHT }}
             >
               {/* Row label */}
               <div className={cn(
                 'w-28 shrink-0 border-r border-gray-200 flex items-center justify-center text-xs font-bold text-gray-700 uppercase tracking-wide px-1',
-                row.type === 'ramp' && 'bg-gray-50',
+                row.type === 'ramp'    && 'bg-gray-50',
+                row.type === 'no_ramp' && 'bg-amber-100 text-amber-700',
                 row.type === 'no_show' && 'bg-red-100 text-red-700',
-                row.type === 'wash' && 'bg-sky-100 text-sky-700',
+                row.type === 'wash'    && 'bg-sky-100 text-sky-700',
               )}>
                 {row.label}
               </div>
