@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import {
   User,
   signInWithEmailAndPassword,
@@ -14,41 +14,59 @@ import { auth, db } from '@/lib/firebase';
 import { cacheClear } from '@/lib/cache';
 import { Role, PageKey, PagePermissions, DEFAULT_PAGE_PERMISSIONS } from '@/types';
 
+const DEFAULT_COLOR = '#2563EB';
+
 interface AuthContextType {
   user: User | null;
   role: Role | null;
   isAdmin: boolean;
   permissions: Record<PageKey, PagePermissions> | null;
+  displayName: string;
+  avatarColor: string;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const googleProvider = new GoogleAuthProvider();
 
-// In-memory cache: avoids re-reading the user doc on every token refresh (~55 min)
-const syncCache = new Map<string, { role: Role; permissions: Record<PageKey, PagePermissions>; ts: number }>();
+interface CacheEntry {
+  role: Role;
+  permissions: Record<PageKey, PagePermissions>;
+  displayName: string;
+  avatarColor: string;
+  ts: number;
+}
+
+const syncCache = new Map<string, CacheEntry>();
 const SYNC_TTL = 5 * 60_000;
 
-async function syncUserDoc(u: User): Promise<{ role: Role; permissions: Record<PageKey, PagePermissions> }> {
+async function syncUserDoc(u: User): Promise<Omit<CacheEntry, 'ts'>> {
   const cached = syncCache.get(u.uid);
   if (cached && Date.now() - cached.ts < SYNC_TTL) {
-    return { role: cached.role, permissions: cached.permissions };
+    const { ts: _, ...rest } = cached;
+    return rest;
   }
 
   const ref = doc(db, 'users', u.uid);
   const snap = await getDoc(ref);
   let role: Role;
   let permissions: Record<PageKey, PagePermissions>;
+  let displayName: string;
+  let avatarColor: string;
 
   if (!snap.exists()) {
-    permissions = { ...DEFAULT_PAGE_PERMISSIONS };
+    permissions  = { ...DEFAULT_PAGE_PERMISSIONS };
+    displayName  = u.displayName ?? '';
+    avatarColor  = DEFAULT_COLOR;
     await setDoc(ref, {
       uid: u.uid,
       email: u.email,
-      displayName: u.displayName ?? '',
+      displayName,
+      avatarColor,
       role: 'user' as Role,
       active: true,
       permissions,
@@ -58,12 +76,16 @@ async function syncUserDoc(u: User): Promise<{ role: Role; permissions: Record<P
     role = 'user';
   } else {
     await setDoc(ref, { lastLoginAt: serverTimestamp() }, { merge: true });
-    role = (snap.data().role as Role) ?? 'user';
-    permissions = (snap.data().permissions as Record<PageKey, PagePermissions>) ?? { ...DEFAULT_PAGE_PERMISSIONS };
+    const data = snap.data();
+    role        = (data.role as Role) ?? 'user';
+    permissions = (data.permissions as Record<PageKey, PagePermissions>) ?? { ...DEFAULT_PAGE_PERMISSIONS };
+    displayName = (data.displayName as string) ?? u.displayName ?? '';
+    avatarColor = (data.avatarColor as string) ?? DEFAULT_COLOR;
   }
 
-  syncCache.set(u.uid, { role, permissions, ts: Date.now() });
-  return { role, permissions };
+  const entry = { role, permissions, displayName, avatarColor, ts: Date.now() };
+  syncCache.set(u.uid, entry);
+  return { role, permissions, displayName, avatarColor };
 }
 
 async function persistSession(idToken: string) {
@@ -79,18 +101,16 @@ async function clearSession() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<Role | null>(null);
-  const [permissions, setPermissions] = useState<Record<PageKey, PagePermissions> | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]           = useState<User | null>(null);
+  const [role, setRole]           = useState<Role | null>(null);
+  const [permissions, setPerms]   = useState<Record<PageKey, PagePermissions> | null>(null);
+  const [displayName, setName]    = useState('');
+  const [avatarColor, setColor]   = useState(DEFAULT_COLOR);
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    // onIdTokenChanged fires on login, logout, AND token refresh (~every 55 min)
     const unsub = onIdTokenChanged(auth, async (u) => {
       if (u) {
-        // 1. Set the session cookie immediately — decoupled from Firestore.
-        //    A user authenticated in Firebase Auth always gets access;
-        //    Firestore Security Rules protect the data independently.
         try {
           const idToken = await u.getIdToken();
           await persistSession(idToken);
@@ -98,28 +118,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn('No se pudo establecer la sesión:', err);
         }
 
-        // 2. Sync Firestore user doc separately — failure here does not block login.
         let role: Role = 'user';
         let perms: Record<PageKey, PagePermissions> = { ...DEFAULT_PAGE_PERMISSIONS };
+        let name = '';
+        let color = DEFAULT_COLOR;
         try {
           const result = await syncUserDoc(u);
-          role = result.role;
+          role  = result.role;
           perms = result.permissions;
+          name  = result.displayName;
+          color = result.avatarColor;
         } catch (err) {
-          console.warn('Error sincronizando perfil en Firestore (verifica las Security Rules):', err);
+          console.warn('Error sincronizando perfil en Firestore:', err);
         }
 
         setRole(role);
-        setPermissions(perms);
+        setPerms(perms);
+        setName(name);
+        setColor(color);
       } else {
         setRole(null);
-        setPermissions(null);
+        setPerms(null);
+        setName('');
+        setColor(DEFAULT_COLOR);
         await clearSession();
       }
       setUser(u);
       setLoading(false);
     });
     return unsub;
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    const u = auth.currentUser;
+    if (!u) return;
+    syncCache.delete(u.uid);
+    try {
+      const result = await syncUserDoc(u);
+      setRole(result.role);
+      setPerms(result.permissions);
+      setName(result.displayName);
+      setColor(result.avatarColor);
+    } catch (err) {
+      console.warn('Error refrescando perfil:', err);
+    }
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -137,9 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, role, isAdmin: role === 'admin', permissions, loading, signIn, signInWithGoogle, signOut }}
-    >
+    <AuthContext.Provider value={{
+      user, role, isAdmin: role === 'admin',
+      permissions, displayName, avatarColor,
+      loading, signIn, signInWithGoogle, signOut, refreshProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );

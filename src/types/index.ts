@@ -124,6 +124,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
+  avatarColor?: string;
   role: Role;
   active: boolean;
   permissions?: Record<PageKey, PagePermissions>;

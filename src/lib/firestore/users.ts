@@ -43,3 +43,11 @@ export async function updateUserProfile(
   await updateDoc(doc(db, 'users', uid), data);
   cacheInvalidate(KEY);
 }
+
+export async function updateOwnProfile(
+  uid: string,
+  data: { displayName?: string; avatarColor?: string },
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), data);
+  cacheInvalidate(KEY);
+}
