@@ -2,7 +2,7 @@
 
 import { X, Pencil, Trash2, Clock, Car, User, Phone, Wrench, FileText, Gauge, CheckCircle2, XCircle } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/types';
-import { SERVICE_LABELS, isoToDisplay, cn } from '@/lib/utils';
+import { SERVICE_LABELS, isoToDisplay, formatRamp, cn } from '@/lib/utils';
 
 interface Props {
   appt: Appointment;
@@ -56,7 +56,7 @@ function BoolRow({ label, value }: { label: string; value: boolean }) {
 }
 
 export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelete }: Props) {
-  const rampLabel = appt.ramp != null ? `Rampa ${appt.ramp}` : 'Sin rampa';
+  const rampLabel = formatRamp(appt.ramp);
 
   function handleDelete() {
     onClose();

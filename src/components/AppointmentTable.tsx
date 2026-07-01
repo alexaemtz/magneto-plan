@@ -2,6 +2,7 @@
 
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { formatRamp } from '@/lib/utils';
 import { createPortal } from 'react-dom';
 import { Appointment, AppointmentStatus, ServiceType } from '@/types';
 import { SERVICE_LABELS } from '@/lib/utils';
@@ -36,11 +37,14 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
 };
 
 const SERVICE_BADGE: Record<ServiceType, string> = {
-  SERVICIO:             'bg-blue-50 text-blue-700',
-  GARANTIA:             'bg-orange-50 text-orange-700',
-  DIAGNOSTICO:          'bg-purple-50 text-purple-700',
-  SERVICIO_DIAGNOSTICO: 'bg-indigo-50 text-indigo-700',
-  SERVICIO_GARANTIA:    'bg-amber-50 text-amber-700',
+  SERVICIO:             'bg-green-50 text-green-700',
+  GARANTIA:             'bg-purple-50 text-purple-700',
+  DIAGNOSTICO:          'bg-yellow-50 text-yellow-700',
+  SERVICIO_DIAGNOSTICO: 'bg-teal-50 text-teal-700',
+  SERVICIO_GARANTIA:    'bg-orange-50 text-orange-700',
+  ALINEACION_BALANCEO:  'bg-indigo-50 text-indigo-700',
+  BALANCEO:             'bg-indigo-50 text-indigo-600',
+  GARANTIA_DIAGNOSTICO: 'bg-violet-50 text-violet-700',
   SIN_CITA:             'bg-rose-50 text-rose-700',
 };
 
@@ -67,7 +71,7 @@ function getColValue(a: Appointment, key: ColKey): string {
     case 'clientName':  return a.clientName ?? '';
     case 'carModel':    return a.carModel ?? '';
     case 'serviceType': return SERVICE_LABELS[a.serviceType] ?? a.serviceType;
-    case 'ramp':        return a.ramp != null ? `Rampa ${a.ramp}` : 'Sin rampa';
+    case 'ramp':        return formatRamp(a.ramp);
     case 'status':      return STATUS_LABELS[a.status] ?? a.status;
   }
 }
@@ -212,7 +216,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Servicio</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Asesor" value={appt.advisor} />
-            <Field label="Rampa" value={appt.ramp != null ? `Rampa ${appt.ramp}` : 'Sin rampa'} />
+            <Field label="Rampa" value={formatRamp(appt.ramp)} />
             <Field label="Orden de trabajo" value={appt.workOrder} />
             <Field label="Nivel mantenimiento" value={appt.maintenanceLevel != null ? `S${appt.maintenanceLevel}` : undefined} />
             <Field label="Tipo de garantía" value={appt.warrantyType} />

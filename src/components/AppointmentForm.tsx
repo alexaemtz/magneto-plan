@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Appointment, ServiceType, Ramp, AppointmentStatus } from '@/types';
-import { SERVICE_LABELS, generateTimeSlots } from '@/lib/utils';
+import { SERVICE_LABELS, generateTimeSlots, formatRamp } from '@/lib/utils';
 import { createAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { getAdvisors, getCarModels } from '@/lib/firestore/catalog';
 import { Advisor, CarModel } from '@/types';
@@ -19,7 +19,7 @@ interface Props {
   onSaved: () => void;
 }
 
-const RAMPS: (Ramp | 'none')[] = [1, 2, 3, 4, 5, 6, 7, 'none'];
+const RAMPS: (Ramp | 'none')[] = [1, 2, 3, 4, 5, 6, 'none'];
 const SERVICE_TYPES = Object.keys(SERVICE_LABELS) as ServiceType[];
 const TIME_SLOTS = generateTimeSlots('07:00', '19:00', 30);
 const MAINTENANCE_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -88,7 +88,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
     const conflict = findConflict(existingAppointments, form, initial?.id);
     if (conflict) {
       toast.error(
-        `Conflicto: Rampa ${form.ramp} ya tiene a "${conflict.clientName}" de ${conflict.startTime} a ${conflict.endTime}`,
+        `Conflicto: ${formatRamp(form.ramp ?? null)} ya tiene a "${conflict.clientName}" de ${conflict.startTime} a ${conflict.endTime}`,
         { duration: 5000 },
       );
       return;
@@ -116,9 +116,9 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
   const labelCls = 'block text-xs font-semibold text-gray-700 mb-1';
 
   const showMaintenance = ['SERVICIO', 'SERVICIO_DIAGNOSTICO', 'SERVICIO_GARANTIA', 'SIN_CITA'].includes(form.serviceType ?? '');
-  const showWarranty = ['GARANTIA', 'SERVICIO_GARANTIA'].includes(form.serviceType ?? '') ||
+  const showWarranty = ['GARANTIA', 'SERVICIO_GARANTIA', 'GARANTIA_DIAGNOSTICO'].includes(form.serviceType ?? '') ||
     (form.serviceType === 'SIN_CITA' && form.sinCitaSubtype === 'GARANTIA');
-  const showDiagnosis = ['DIAGNOSTICO', 'SERVICIO_DIAGNOSTICO'].includes(form.serviceType ?? '') ||
+  const showDiagnosis = ['DIAGNOSTICO', 'SERVICIO_DIAGNOSTICO', 'GARANTIA_DIAGNOSTICO'].includes(form.serviceType ?? '') ||
     (form.serviceType === 'SIN_CITA' && form.sinCitaSubtype === 'DIAGNOSTICO');
 
   return (
@@ -256,7 +256,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
               <label className={labelCls}>Rampa</label>
               <select className={inputCls} value={form.ramp?.toString() ?? 'none'} onChange={(e) => set('ramp', e.target.value === 'none' ? null : parseInt(e.target.value) as Ramp)}>
                 <option value="none">Sin rampa</option>
-                {[1,2,3,4,5,6,7].map((r) => <option key={r} value={r}>Rampa {r}</option>)}
+                {([1,2,3,4,5,6] as Ramp[]).map((r) => <option key={r} value={r}>{formatRamp(r)}</option>)}
               </select>
             </div>
 

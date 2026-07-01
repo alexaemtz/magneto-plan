@@ -4,6 +4,9 @@ export type ServiceType =
   | 'DIAGNOSTICO'
   | 'SERVICIO_DIAGNOSTICO'
   | 'SERVICIO_GARANTIA'
+  | 'ALINEACION_BALANCEO'
+  | 'BALANCEO'
+  | 'GARANTIA_DIAGNOSTICO'
   | 'SIN_CITA';
 
 export type AppointmentStatus =
@@ -14,7 +17,7 @@ export type AppointmentStatus =
   | 'ESPERANDO_REFACCION'
   | 'LAVADO';
 
-export type Ramp = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type Ramp = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type MaintenanceLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 

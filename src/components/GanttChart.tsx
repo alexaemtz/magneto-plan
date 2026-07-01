@@ -20,16 +20,15 @@ interface GanttChartProps {
 }
 
 const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
-  { label: 'RAMPA 1',  ramp: 1,    type: 'ramp'     },
-  { label: 'RAMPA 2',  ramp: 2,    type: 'ramp'     },
-  { label: 'RAMPA 3',  ramp: 3,    type: 'ramp'     },
-  { label: 'RAMPA 4',  ramp: 4,    type: 'ramp'     },
-  { label: 'RAMPA 5',  ramp: 5,    type: 'ramp'     },
-  { label: 'RAMPA 6',  ramp: 6,    type: 'ramp'     },
-  { label: 'RAMPA 7',  ramp: 7,    type: 'ramp'     },
+  { label: 'RAMPA 1',   ramp: 1,    type: 'ramp'    },
+  { label: 'RAMPA 2',   ramp: 2,    type: 'ramp'    },
+  { label: 'RAMPA 3',   ramp: 3,    type: 'ramp'    },
+  { label: 'RAMPA 4',   ramp: 4,    type: 'ramp'    },
+  { label: 'RAMPA 5',   ramp: 5,    type: 'ramp'    },
+  { label: 'ALINEADOR', ramp: 6,    type: 'ramp'    },
   { label: 'SIN RAMPA', ramp: null, type: 'no_ramp' },
-  { label: 'NO SHOW',  ramp: null, type: 'no_show'  },
-  { label: 'LAVADO',   ramp: null, type: 'wash'     },
+  { label: 'NO SHOW',   ramp: null, type: 'no_show' },
+  { label: 'LAVADO',    ramp: null, type: 'wash'    },
 ];
 
 const STATUS_DOT: Record<AppointmentStatus, string> = {
