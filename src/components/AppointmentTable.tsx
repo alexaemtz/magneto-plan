@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo, useEffect } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { createPortal } from 'react-dom';
 import { Appointment, AppointmentStatus, ServiceType } from '@/types';
 import { SERVICE_LABELS } from '@/lib/utils';
@@ -153,7 +154,7 @@ function Field({ label, value }: { label: string; value?: string | number | bool
   );
 }
 
-function ViewPanel({ appt, onClose, onEdit }: { appt: Appointment; onClose: () => void; onEdit: () => void }) {
+function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onClose: () => void; onEdit: () => void; canEdit: boolean }) {
   return (
     <div className="fixed inset-y-0 right-0 z-40 w-[400px] bg-white shadow-2xl border-l border-gray-200 flex flex-col">
       {/* Header */}
@@ -163,12 +164,14 @@ function ViewPanel({ appt, onClose, onEdit }: { appt: Appointment; onClose: () =
           <p className="font-semibold text-gray-800 text-sm leading-tight mt-0.5">{appt.clientName}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
-          >
-            <Pencil size={12} /> Editar
-          </button>
+          {canEdit && (
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+            >
+              <Pencil size={12} /> Editar
+            </button>
+          )}
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors">
             <X size={16} className="text-gray-500" />
           </button>
@@ -304,6 +307,7 @@ interface Props {
 }
 
 export default function AppointmentTable({ appointments, date, onRefresh }: Props) {
+  const perms = usePermissions('gantt');
   const [search, setSearch]                 = useState('');
   const [sortCol, setSortCol]               = useState<ColKey | null>(null);
   const [sortDir, setSortDir]               = useState<'asc' | 'desc' | null>(null);
@@ -594,20 +598,24 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
                       >
                         <Eye size={14} />
                       </button>
-                      <button
-                        onClick={() => setEditAppt(appt)}
-                        title="Editar"
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteTarget(appt)}
-                        title="Eliminar"
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {perms.update && (
+                        <button
+                          onClick={() => setEditAppt(appt)}
+                          title="Editar"
+                          className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {perms.delete && (
+                        <button
+                          onClick={() => setDeleteTarget(appt)}
+                          title="Eliminar"
+                          className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -623,6 +631,7 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
           appt={viewAppt}
           onClose={() => setViewAppt(null)}
           onEdit={() => { setEditAppt(viewAppt); setViewAppt(null); }}
+          canEdit={perms.update}
         />
       )}
 

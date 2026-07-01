@@ -14,7 +14,8 @@ import {
 interface GanttChartProps {
   appointments: Appointment[];
   date: string;
-  onSlotClick?: (ramp: Ramp | null, time: string, existing?: Appointment) => void;
+  onSlotClick?: (ramp: Ramp | null, time: string) => void;
+  onSelect?: (appt: Appointment) => void;
   onDelete?: (appt: Appointment) => void;
 }
 
@@ -43,7 +44,7 @@ const STATUS_DOT: Record<AppointmentStatus, string> = {
 const SLOT_WIDTH = 80; // px per 30-min slot
 const ROW_HEIGHT = 56; // px
 
-export default function GanttChart({ appointments, date, onSlotClick, onDelete }: GanttChartProps) {
+export default function GanttChart({ appointments, date, onSlotClick, onSelect, onDelete }: GanttChartProps) {
   const [tooltip, setTooltip] = useState<{ appt: Appointment; x: number; y: number } | null>(null);
 
   const slots = useMemo(() => generateTimeSlots('07:00', '19:00', 30), []);
@@ -161,7 +162,7 @@ export default function GanttChart({ appointments, date, onSlotClick, onDelete }
                           'group shrink-0 relative border-r border-white cursor-pointer rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden flex flex-col justify-center gap-0.5 hover:brightness-95 transition-all',
                           SERVICE_COLORS_LIGHT[occupant.serviceType]
                         )}
-                        onClick={() => onSlotClick?.(row.ramp, t, occupant)}
+                        onClick={() => onSelect?.(occupant)}
                         onMouseEnter={(e) => setTooltip({ appt: occupant, x: e.clientX, y: e.clientY })}
                         onMouseLeave={() => setTooltip(null)}
                       >

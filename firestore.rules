@@ -24,6 +24,22 @@ service cloud.firestore {
           && get(selfPath()).data.role == 'admin';
     }
 
+    function userPerms() {
+      return get(selfPath()).data.permissions;
+    }
+
+    function canCreate(page) {
+      return isAdmin() || userPerms()[page].create == true;
+    }
+
+    function canUpdate(page) {
+      return isAdmin() || userPerms()[page].update == true;
+    }
+
+    function canDelete(page) {
+      return isAdmin() || userPerms()[page].delete == true;
+    }
+
     // ── Usuarios ──────────────────────────────────────────────────────────────
     match /users/{userId} {
       // Lectura: propio doc o admin.
@@ -33,14 +49,14 @@ service cloud.firestore {
       allow create: if isAuth() && request.auth.uid == userId;
 
       // Actualización:
-      //   • Propio usuario: puede actualizar cualquier campo EXCEPTO role y active.
+      //   • Propio usuario: puede actualizar cualquier campo EXCEPTO role, active y permissions.
       //   • Admin: puede actualizar cualquier campo de cualquier usuario.
       allow update: if isAuth() && (
         (
           request.auth.uid == userId &&
           !request.resource.data.diff(resource.data)
                              .affectedKeys()
-                             .hasAny(['role', 'active'])
+                             .hasAny(['role', 'active', 'permissions'])
         ) || isAdmin()
       );
     }
@@ -56,17 +72,26 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ── Datos operativos: todos los usuarios activos ───────────────────────────
+    // ── Citas ────────────────────────────────────────────────────────────────
     match /appointments/{docId} {
-      allow read, write: if isActive();
+      allow read:   if isActive();
+      allow create: if isActive() && (canCreate('gantt') || canCreate('dashboard'));
+      allow update: if isActive() && (canUpdate('gantt') || canUpdate('dashboard'));
+      allow delete: if isActive() && (canDelete('gantt') || canDelete('dashboard'));
     }
 
+    // ── Indicadores diarios ───────────────────────────────────────────────────
     match /dailyIndicators/{docId} {
-      allow read, write: if isActive();
+      allow read:   if isActive();
+      allow write:  if isActive() && canUpdate('indicador');
     }
 
+    // ── Casos pendientes ──────────────────────────────────────────────────────
     match /pendingCases/{docId} {
-      allow read, write: if isActive();
+      allow read:   if isActive();
+      allow create: if isActive() && canCreate('casosPendientes');
+      allow update: if isActive() && canUpdate('casosPendientes');
+      allow delete: if isActive() && canDelete('casosPendientes');
     }
   }
 }

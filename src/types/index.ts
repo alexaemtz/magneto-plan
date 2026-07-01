@@ -94,12 +94,36 @@ export interface CarModel {
 
 export type Role = 'admin' | 'user';
 
+export type PageKey = 'dashboard' | 'gantt' | 'indicador' | 'casosPendientes';
+
+export interface PagePermissions {
+  read: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
+export const PAGE_LABELS: Record<PageKey, string> = {
+  dashboard:       'Dashboard',
+  gantt:           'Magneto Plan',
+  indicador:       'Indicador Diario',
+  casosPendientes: 'Casos Pendientes',
+};
+
+export const DEFAULT_PAGE_PERMISSIONS: Record<PageKey, PagePermissions> = {
+  dashboard:       { read: true, create: false, update: false, delete: false },
+  gantt:           { read: true, create: false, update: false, delete: false },
+  indicador:       { read: true, create: false, update: false, delete: false },
+  casosPendientes: { read: true, create: false, update: false, delete: false },
+};
+
 export interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
   role: Role;
   active: boolean;
+  permissions?: Record<PageKey, PagePermissions>;
 }
 
 export type GanttSlot = {

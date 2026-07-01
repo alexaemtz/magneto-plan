@@ -13,6 +13,7 @@ import {
   Wrench,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -32,7 +33,7 @@ interface Props {
 
 export default function Sidebar({ collapsed, onToggle }: Props) {
   const pathname = usePathname();
-  const { signOut, user } = useAuth();
+  const { signOut, user, isAdmin } = useAuth();
 
   async function handleSignOut() {
     await signOut();
@@ -101,6 +102,36 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
             </Link>
           );
         })}
+
+        {isAdmin && (
+          <>
+            <div className={cn(
+              'overflow-hidden transition-all duration-300 px-3 pt-4 pb-1',
+              collapsed ? 'max-w-0 opacity-0' : 'opacity-100',
+            )}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600">Admin</p>
+            </div>
+            <Link
+              href="/admin/usuarios"
+              title={collapsed ? 'Usuarios' : undefined}
+              className={cn(
+                'flex items-center rounded-xl text-sm font-medium transition-all duration-150',
+                'px-3 py-2.5 gap-3',
+                pathname.startsWith('/admin')
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                  : 'text-gray-400 hover:bg-white/10 hover:text-white',
+              )}
+            >
+              <ShieldCheck size={18} className="shrink-0" />
+              <span className={cn(
+                'overflow-hidden whitespace-nowrap transition-all duration-300',
+                collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100',
+              )}>
+                Usuarios
+              </span>
+            </Link>
+          </>
+        )}
       </nav>
 
       {/* User / sign out */}

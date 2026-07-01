@@ -1,6 +1,6 @@
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { UserProfile, Role } from '@/types';
+import { UserProfile, Role, PageKey, PagePermissions } from '@/types';
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '@/lib/cache';
 
 const KEY = 'users-list';
@@ -24,5 +24,22 @@ export async function setUserRole(uid: string, role: Role): Promise<void> {
 
 export async function setUserActive(uid: string, active: boolean): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { active });
+  cacheInvalidate(KEY);
+}
+
+export async function setUserPagePermissions(
+  uid: string,
+  page: PageKey,
+  perms: PagePermissions,
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { [`permissions.${page}`]: perms });
+  cacheInvalidate(KEY);
+}
+
+export async function updateUserProfile(
+  uid: string,
+  data: { role?: Role; active?: boolean; permissions?: Record<PageKey, PagePermissions> },
+): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), data);
   cacheInvalidate(KEY);
 }

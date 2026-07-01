@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import AppShell from '@/components/AppShell';
 import GanttChart from '@/components/GanttChart';
 import DailyIndicatorTable from '@/components/DailyIndicator';
 import AppointmentForm from '@/components/AppointmentForm';
+import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import { Appointment, DailyIndicator, Ramp } from '@/types';
 import { subscribeToAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
 import { getDailyIndicator } from '@/lib/firestore/indicators';
@@ -25,22 +27,22 @@ const makeEmptyIndicator = (date: string): DailyIndicator => ({
 
 export default function DashboardPage() {
   const date = todayISO();
+  const perms = usePermissions('dashboard');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [indicator, setIndicator] = useState<DailyIndicator>(makeEmptyIndicator(date));
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | undefined>();
+  const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('08:00');
 
   useEffect(() => {
     setLoading(true);
-    // Appointments: real-time subscription
     const unsub = subscribeToAppointmentsByDate(date, (appts) => {
       setAppointments(appts);
       setLoading(false);
     });
-    // Indicator: one-off read with localStorage cache (changes once per day)
     getDailyIndicator(date)
       .then((ind) => setIndicator(ind ?? makeEmptyIndicator(date)))
       .catch((err) => {
@@ -50,14 +52,21 @@ export default function DashboardPage() {
     return unsub;
   }, [date]);
 
-  function handleSlotClick(ramp: Ramp | null, time: string, existing?: Appointment) {
-    if (existing) {
-      setEditAppt(existing);
-    } else {
-      setEditAppt(undefined);
-      setSelectedRamp(ramp);
-      setSelectedTime(time);
-    }
+  function handleSlotClick(ramp: Ramp | null, time: string) {
+    setEditAppt(undefined);
+    setSelectedRamp(ramp);
+    setSelectedTime(time);
+    setShowForm(true);
+  }
+
+  function handleSelectAppt(appt: Appointment) {
+    setDetailAppt(appt);
+  }
+
+  function handleEditFromDetail(appt: Appointment) {
+    setEditAppt(appt);
+    setSelectedRamp(appt.ramp);
+    setSelectedTime(appt.startTime);
     setShowForm(true);
   }
 
@@ -65,7 +74,6 @@ export default function DashboardPage() {
     if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
     await deleteAppointment(appt.id!);
     toast.success('Cita eliminada');
-    // No manual reload — onSnapshot reflects the deletion automatically
   }
 
   return (
@@ -77,7 +85,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-sm text-gray-500 mt-0.5">{formatDate(date)}</p>
           </div>
-          <div className="flex gap-3">
+          {perms.create && (
             <button
               onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
@@ -85,7 +93,7 @@ export default function DashboardPage() {
               <Plus size={16} />
               Nueva cita
             </button>
-          </div>
+          )}
         </div>
 
         {/* Stats */}
@@ -111,7 +119,13 @@ export default function DashboardPage() {
               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} onDelete={handleDelete} />
+            <GanttChart
+              appointments={appointments}
+              date={date}
+              onSlotClick={perms.create ? handleSlotClick : undefined}
+              onSelect={handleSelectAppt}
+              onDelete={perms.delete ? handleDelete : undefined}
+            />
           )}
         </div>
 
@@ -137,12 +151,16 @@ export default function DashboardPage() {
                         <p className="text-xs text-gray-500 truncate">{a.serialNumber} | Asesor: {a.advisor}</p>
                       </div>
                       <div className="flex gap-1 shrink-0">
-                        <button onClick={() => handleSlotClick(a.ramp, a.startTime, a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
-                          <Pencil size={14} />
-                        </button>
-                        <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
+                        {perms.update && (
+                          <button onClick={() => handleEditFromDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                        {perms.delete && (
+                          <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -152,6 +170,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {detailAppt && (
+        <AppointmentDetailDialog
+          appt={detailAppt}
+          onClose={() => setDetailAppt(null)}
+          onEdit={handleEditFromDetail}
+          onDelete={handleDelete}
+        />
+      )}
 
       {showForm && (
         <AppointmentForm

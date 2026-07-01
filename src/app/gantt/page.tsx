@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import AppShell from '@/components/AppShell';
 import GanttChart from '@/components/GanttChart';
 import AppointmentForm from '@/components/AppointmentForm';
+import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import AppointmentTable from '@/components/AppointmentTable';
 import { Appointment, Ramp } from '@/types';
 import { subscribeToAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
-import { todayISO, formatDate } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2 } from 'lucide-react';
+import { todayISO, formatDate, isoToDisplay } from '@/lib/utils';
+import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -16,13 +18,16 @@ type Tab = 'gantt' | 'tabla';
 
 export default function GanttPage() {
   const [date, setDate]                 = useState(todayISO());
+  const dateInputRef                    = useRef<HTMLInputElement>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading]           = useState(true);
   const [showForm, setShowForm]         = useState(false);
   const [editAppt, setEditAppt]         = useState<Appointment | undefined>();
+  const [detailAppt, setDetailAppt]     = useState<Appointment | null>(null);
   const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
   const [selectedTime, setSelectedTime] = useState('08:00');
   const [activeTab, setActiveTab]       = useState<Tab>('gantt');
+  const perms                           = usePermissions('gantt');
 
   useEffect(() => {
     setLoading(true);
@@ -30,7 +35,7 @@ export default function GanttPage() {
       setAppointments(appts);
       setLoading(false);
     });
-    return unsub; // unsubscribes when date changes or component unmounts
+    return unsub;
   }, [date]);
 
   function shiftDay(n: number) {
@@ -39,14 +44,21 @@ export default function GanttPage() {
     setDate(d.toISOString().split('T')[0]);
   }
 
-  function handleSlotClick(ramp: Ramp | null, time: string, existing?: Appointment) {
-    if (existing) {
-      setEditAppt(existing);
-    } else {
-      setEditAppt(undefined);
-      setSelectedRamp(ramp);
-      setSelectedTime(time);
-    }
+  function handleSlotClick(ramp: Ramp | null, time: string) {
+    setEditAppt(undefined);
+    setSelectedRamp(ramp);
+    setSelectedTime(time);
+    setShowForm(true);
+  }
+
+  function handleSelectAppt(appt: Appointment) {
+    setDetailAppt(appt);
+  }
+
+  function handleEditFromDetail(appt: Appointment) {
+    setEditAppt(appt);
+    setSelectedRamp(appt.ramp);
+    setSelectedTime(appt.startTime);
     setShowForm(true);
   }
 
@@ -73,29 +85,40 @@ export default function GanttPage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Date nav */}
             <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-1">
               <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                 <ChevronLeft size={18} className="text-gray-600" />
               </button>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="text-sm font-medium text-gray-700 border-none outline-none bg-transparent"
-              />
+              <div
+                className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => dateInputRef.current?.showPicker()}
+              >
+                <Calendar size={14} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-700 select-none">
+                  {isoToDisplay(date)}
+                </span>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
               <button onClick={() => shiftDay(1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                 <ChevronRight size={18} className="text-gray-600" />
               </button>
             </div>
 
-            <button
-              onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
-            >
-              <Plus size={16} />
-              Nueva cita
-            </button>
+            {perms.create && (
+              <button
+                onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
+              >
+                <Plus size={16} />
+                Nueva cita
+              </button>
+            )}
           </div>
         </div>
 
@@ -136,7 +159,13 @@ export default function GanttPage() {
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <GanttChart appointments={appointments} date={date} onSlotClick={handleSlotClick} onDelete={handleDelete} />
+            <GanttChart
+              appointments={appointments}
+              date={date}
+              onSlotClick={perms.create ? handleSlotClick : undefined}
+              onSelect={handleSelectAppt}
+              onDelete={perms.delete ? handleDelete : undefined}
+            />
           )
         ) : (
           loading ? (
@@ -147,11 +176,20 @@ export default function GanttPage() {
             <AppointmentTable
               appointments={appointments}
               date={date}
-              onRefresh={() => {}} // no-op: onSnapshot keeps data fresh automatically
+              onRefresh={() => {}}
             />
           )
         )}
       </div>
+
+      {detailAppt && (
+        <AppointmentDetailDialog
+          appt={detailAppt}
+          onClose={() => setDetailAppt(null)}
+          onEdit={handleEditFromDetail}
+          onDelete={handleDelete}
+        />
+      )}
 
       {showForm && (
         <AppointmentForm
