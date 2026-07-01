@@ -46,8 +46,8 @@ export const SERVICE_COLORS: Record<ServiceType, string> = {
   SERVICIO:             'bg-green-500',
   GARANTIA:             'bg-purple-500',
   DIAGNOSTICO:          'bg-yellow-500',
-  SERVICIO_DIAGNOSTICO: 'bg-teal-500',
-  SERVICIO_GARANTIA:    'bg-orange-500',
+  SERVICIO_DIAGNOSTICO: 'bg-blue-500',
+  SERVICIO_GARANTIA:    'bg-blue-500',
   ALINEACION_BALANCEO:  'bg-indigo-500',
   BALANCEO:             'bg-indigo-400',
   GARANTIA_DIAGNOSTICO: 'bg-violet-500',
@@ -55,15 +55,15 @@ export const SERVICE_COLORS: Record<ServiceType, string> = {
 };
 
 export const SERVICE_COLORS_LIGHT: Record<ServiceType, string> = {
-  SERVICIO:             'bg-green-100 border-green-400 text-green-900',
-  GARANTIA:             'bg-purple-100 border-purple-400 text-purple-900',
-  DIAGNOSTICO:          'bg-yellow-100 border-yellow-400 text-yellow-900',
-  SERVICIO_DIAGNOSTICO: 'bg-teal-100 border-teal-400 text-teal-900',
-  SERVICIO_GARANTIA:    'bg-orange-100 border-orange-400 text-orange-900',
-  ALINEACION_BALANCEO:  'bg-indigo-100 border-indigo-400 text-indigo-900',
-  BALANCEO:             'bg-indigo-50 border-indigo-300 text-indigo-800',
-  GARANTIA_DIAGNOSTICO: 'bg-violet-100 border-violet-400 text-violet-900',
-  SIN_CITA:             'bg-rose-100 border-rose-400 text-rose-900',
+  SERVICIO:             'bg-green-50 border-green-300 text-green-700',
+  GARANTIA:             'bg-purple-50 border-purple-300 text-purple-700',
+  DIAGNOSTICO:          'bg-yellow-50 border-yellow-300 text-yellow-700',
+  SERVICIO_DIAGNOSTICO: 'bg-blue-50 border-blue-300 text-blue-700',
+  SERVICIO_GARANTIA:    'bg-blue-50 border-blue-300 text-blue-700',
+  ALINEACION_BALANCEO:  'bg-indigo-50 border-indigo-300 text-indigo-700',
+  BALANCEO:             'bg-indigo-50 border-indigo-300 text-indigo-600',
+  GARANTIA_DIAGNOSTICO: 'bg-violet-50 border-violet-300 text-violet-700',
+  SIN_CITA:             'bg-rose-50 border-rose-300 text-rose-700',
 };
 
 export function formatRamp(ramp: Ramp | null): string {
