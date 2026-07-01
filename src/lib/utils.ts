@@ -40,18 +40,18 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
 };
 
 export const SERVICE_COLORS: Record<ServiceType, string> = {
-  SERVICIO: 'bg-blue-500',
-  GARANTIA: 'bg-amber-500',
-  DIAGNOSTICO: 'bg-purple-500',
+  SERVICIO: 'bg-green-500',
+  GARANTIA: 'bg-purple-500',
+  DIAGNOSTICO: 'bg-yellow-500',
   SERVICIO_DIAGNOSTICO: 'bg-teal-500',
   SERVICIO_GARANTIA: 'bg-orange-500',
   SIN_CITA: 'bg-rose-500',
 };
 
 export const SERVICE_COLORS_LIGHT: Record<ServiceType, string> = {
-  SERVICIO: 'bg-blue-100 border-blue-400 text-blue-900',
-  GARANTIA: 'bg-amber-100 border-amber-400 text-amber-900',
-  DIAGNOSTICO: 'bg-purple-100 border-purple-400 text-purple-900',
+  SERVICIO: 'bg-green-100 border-green-400 text-green-900',
+  GARANTIA: 'bg-purple-100 border-purple-400 text-purple-900',
+  DIAGNOSTICO: 'bg-yellow-100 border-yellow-400 text-yellow-900',
   SERVICIO_DIAGNOSTICO: 'bg-teal-100 border-teal-400 text-teal-900',
   SERVICIO_GARANTIA: 'bg-orange-100 border-orange-400 text-orange-900',
   SIN_CITA: 'bg-rose-100 border-rose-400 text-rose-900',
