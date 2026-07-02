@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Appointment, ServiceType, Ramp, AppointmentStatus } from '@/types';
-import { SERVICE_LABELS, generateTimeSlots, formatRamp } from '@/lib/utils';
+import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { createAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { getAdvisors, getCarModels } from '@/lib/firestore/catalog';
 import { Advisor, CarModel } from '@/types';
@@ -21,7 +21,7 @@ interface Props {
 
 const RAMPS: (Ramp | 'none')[] = [1, 2, 3, 4, 5, 6, 'none'];
 const SERVICE_TYPES = Object.keys(SERVICE_LABELS) as ServiceType[];
-const TIME_SLOTS = generateTimeSlots('07:00', '19:00', 30);
+const TIME_SLOTS = generateTimeSlots('07:00', '21:00', 30);
 const MAINTENANCE_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 const DEFAULT: Partial<Appointment> = {
@@ -38,8 +38,37 @@ function findConflict(existing: Appointment[], form: Partial<Appointment>, editi
   for (const appt of existing) {
     if (appt.id === editingId) continue;
     if (appt.date !== form.date || appt.ramp !== form.ramp) continue;
-    // Overlap: los rangos se solapan si inicio de uno está antes del fin del otro
     if (form.startTime < appt.endTime && form.endTime > appt.startTime) return appt;
+  }
+  return null;
+}
+
+// Returns the first gap on the same ramp/date with enough room for the service duration.
+function findNextSlot(
+  existing: Appointment[],
+  form: Partial<Appointment>,
+  editingId?: string,
+): { startTime: string; endTime: string } | null {
+  if (!form.ramp || !form.startTime || !form.endTime || !form.date) return null;
+  const duration = timeToMinutes(form.endTime) - timeToMinutes(form.startTime);
+  if (duration <= 0) return null;
+
+  const rampAppts = existing
+    .filter((a) => a.id !== editingId && a.date === form.date && a.ramp === form.ramp)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  let candidate = timeToMinutes(form.startTime);
+  const dayEnd  = timeToMinutes('21:00');
+
+  while (candidate + duration <= dayEnd) {
+    const candidateEnd = candidate + duration;
+    const conflict = rampAppts.find((a) => {
+      const aStart = timeToMinutes(a.startTime);
+      const aEnd   = timeToMinutes(a.endTime);
+      return candidate < aEnd && candidateEnd > aStart;
+    });
+    if (!conflict) return { startTime: minutesToTime(candidate), endTime: minutesToTime(candidateEnd) };
+    candidate = timeToMinutes(conflict.endTime);
   }
   return null;
 }
@@ -85,18 +114,37 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
       toast.error('Completa los campos requeridos');
       return;
     }
-    const conflict = findConflict(existingAppointments, form, initial?.id);
+    let saveForm = { ...form };
+    const conflict = findConflict(existingAppointments, saveForm, initial?.id);
     if (conflict) {
-      toast.error(
-        `Conflicto: ${formatRamp(form.ramp ?? null)} ya tiene a "${conflict.clientName}" de ${conflict.startTime} a ${conflict.endTime}`,
-        { duration: 5000 },
+      if (initial?.id) {
+        // Editing — keep the blocking behavior so the user decides
+        toast.error(
+          `Conflicto: ${formatRamp(saveForm.ramp ?? null)} ya tiene a "${conflict.clientName}" de ${conflict.startTime} a ${conflict.endTime}`,
+          { duration: 5000 },
+        );
+        return;
+      }
+      // New appointment — auto-shift to the next available slot
+      const next = findNextSlot(existingAppointments, saveForm);
+      if (!next) {
+        toast.error(
+          `Sin espacio disponible en ${formatRamp(saveForm.ramp ?? null)} para este horario.`,
+          { duration: 5000 },
+        );
+        return;
+      }
+      toast(
+        `${formatRamp(saveForm.ramp ?? null)} ocupada a las ${saveForm.startTime}. Cita movida al siguiente horario disponible: ${next.startTime} – ${next.endTime}.`,
+        { icon: '📅', duration: 6000 },
       );
-      return;
+      const newDuration = timeToMinutes(next.endTime) - timeToMinutes(next.startTime);
+      saveForm = { ...saveForm, startTime: next.startTime, endTime: next.endTime, workHours: newDuration / 60 };
     }
 
     setSaving(true);
     try {
-      const data = { ...form } as Appointment;
+      const data = { ...saveForm } as Appointment;
       if (initial?.id) {
         await updateAppointment(initial.id, data);
         toast.success('Cita actualizada');
@@ -315,6 +363,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
           <div>
             <label className={labelCls}>Estado</label>
             <select className={inputCls} value={form.status ?? 'PROGRAMADO'} onChange={(e) => set('status', e.target.value as AppointmentStatus)}>
+              <option value="RECIBIDO">Recibido</option>
               <option value="PROGRAMADO">Programado</option>
               <option value="EN_PROCESO">En proceso</option>
               <option value="COMPLETADO">Completado</option>

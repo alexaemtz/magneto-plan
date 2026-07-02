@@ -10,6 +10,7 @@ export type ServiceType =
   | 'SIN_CITA';
 
 export type AppointmentStatus =
+  | 'RECIBIDO'
   | 'PROGRAMADO'
   | 'EN_PROCESO'
   | 'COMPLETADO'

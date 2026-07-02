@@ -36,6 +36,7 @@ const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
 ];
 
 const STATUS_DOT: Record<AppointmentStatus, string> = {
+  RECIBIDO:            'bg-teal-500',
   PROGRAMADO:          'bg-gray-400',
   EN_PROCESO:          'bg-green-500',
   COMPLETADO:          'bg-blue-600',

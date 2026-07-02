@@ -12,6 +12,7 @@ interface Props {
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
+  RECIBIDO:            'Recibido',
   PROGRAMADO:          'Programado',
   EN_PROCESO:          'En proceso',
   COMPLETADO:          'Completado',
@@ -21,6 +22,7 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 };
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
+  RECIBIDO:            'bg-teal-100 text-teal-700',
   PROGRAMADO:          'bg-blue-100 text-blue-700',
   EN_PROCESO:          'bg-amber-100 text-amber-700',
   COMPLETADO:          'bg-green-100 text-green-700',
