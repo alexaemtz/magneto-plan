@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppShell from '@/components/AppShell';
 import GanttChart from '@/components/GanttChart';
@@ -10,8 +10,8 @@ import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import { Appointment, DailyIndicator, Ramp } from '@/types';
 import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { getDailyIndicator } from '@/lib/firestore/indicators';
-import { todayISO, formatDate, timeToMinutes, minutesToTime } from '@/lib/utils';
-import { Plus, Trash2, Pencil } from 'lucide-react';
+import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
+import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const makeEmptyIndicator = (date: string): DailyIndicator => ({
@@ -26,8 +26,15 @@ const makeEmptyIndicator = (date: string): DailyIndicator => ({
 });
 
 export default function DashboardPage() {
-  const date = todayISO();
-  const perms = usePermissions('dashboard');
+  const [date, setDate]     = useState(todayISO());
+  const dateInputRef        = useRef<HTMLInputElement>(null);
+  const perms               = usePermissions('dashboard');
+
+  function shiftDay(n: number) {
+    const d = new Date(date + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    setDate(d.toISOString().split('T')[0]);
+  }
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [indicator, setIndicator] = useState<DailyIndicator>(makeEmptyIndicator(date));
   const [loading, setLoading] = useState(true);
@@ -108,20 +115,48 @@ export default function DashboardPage() {
     <AppShell>
       <div className="px-6 py-6 space-y-6 max-w-screen-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-sm text-gray-500 mt-0.5">{formatDate(date)}</p>
           </div>
-          {perms.create && (
-            <button
-              onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
-            >
-              <Plus size={16} />
-              Nueva cita
-            </button>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Date navigator */}
+            <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-1">
+              <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <ChevronLeft size={18} className="text-gray-600" />
+              </button>
+              <div
+                className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => dateInputRef.current?.showPicker()}
+              >
+                <Calendar size={14} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-700 select-none">
+                  {isoToDisplay(date)}
+                </span>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
+              <button onClick={() => shiftDay(1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <ChevronRight size={18} className="text-gray-600" />
+              </button>
+            </div>
+
+            {perms.create && (
+              <button
+                onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
+              >
+                <Plus size={16} />
+                Nueva cita
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stats */}
@@ -161,12 +196,12 @@ export default function DashboardPage() {
         {/* Indicator + list */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">Indicador de hoy</h2>
+            <h2 className="text-base font-semibold text-gray-700 mb-3">Indicador — {isoToDisplay(date)}</h2>
             <DailyIndicatorTable indicator={indicator} onSave={setIndicator} />
           </div>
 
           <div>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">Citas programadas ({appointments.length})</h2>
+            <h2 className="text-base font-semibold text-gray-700 mb-3">Citas — {isoToDisplay(date)} ({appointments.length})</h2>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               {appointments.length === 0 ? (
                 <div className="py-12 text-center text-gray-400 text-sm">No hay citas para hoy</div>
