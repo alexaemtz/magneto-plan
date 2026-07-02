@@ -300,7 +300,7 @@ export default function GanttChart({
           <p>Cliente: {tooltip.appt.clientName}</p>
           <p>Tel: {tooltip.appt.clientPhone}</p>
           <p>Asesor: {tooltip.appt.advisor}</p>
-          <p>En rampa: {tooltip.appt.startTime} – {tooltip.appt.endTime}</p>
+          <p>En proceso: {tooltip.appt.startTime} – {tooltip.appt.endTime}</p>
           {tooltip.appt.status === 'LAVADO' && tooltip.appt.lavadoStartTime && (
             <p className="text-sky-300">
               Lavado: {tooltip.appt.lavadoStartTime} – {minutesToTime(timeToMinutes(tooltip.appt.lavadoStartTime) + WASH_MIN)}
