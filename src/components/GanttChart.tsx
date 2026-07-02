@@ -60,7 +60,7 @@ export default function GanttChart({
   const [dragOver, setDragOver]   = useState<{ rowLabel: string; slotTime: string } | null>(null);
   const [hoveredCell, setHovered] = useState<string | null>(null);
 
-  const slots = useMemo(() => generateTimeSlots('07:00', '19:00', 30), []);
+  const slots = useMemo(() => generateTimeSlots('07:00', '21:00', 30), []);
 
   // Route each appointment to its display row
   const byRamp = useMemo(() => {
