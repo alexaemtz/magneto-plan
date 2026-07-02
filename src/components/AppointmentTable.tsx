@@ -48,17 +48,18 @@ const SERVICE_BADGE: Record<ServiceType, string> = {
   SIN_CITA:             'bg-rose-50 text-rose-700',
 };
 
-type ColKey = 'date' | 'startTime' | 'advisor' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status';
+type ColKey = 'date' | 'startTime' | 'advisor' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
 
 const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
-  { key: 'date',        label: 'Fecha',    defaultWidth: 110 },
-  { key: 'startTime',   label: 'Hora',     defaultWidth: 110 },
-  { key: 'advisor',     label: 'Asesor',   defaultWidth: 145 },
-  { key: 'clientName',  label: 'Cliente',  defaultWidth: 155 },
-  { key: 'carModel',    label: 'Modelo',   defaultWidth: 135 },
-  { key: 'serviceType', label: 'Tipo',     defaultWidth: 185 },
-  { key: 'ramp',        label: 'Rampa',    defaultWidth: 85  },
-  { key: 'status',      label: 'Estado',   defaultWidth: 155 },
+  { key: 'date',        label: 'Fecha',            defaultWidth: 110 },
+  { key: 'startTime',   label: 'Hora',             defaultWidth: 110 },
+  { key: 'workOrder',   label: 'Orden de trabajo', defaultWidth: 130 },
+  { key: 'advisor',     label: 'Asesor',           defaultWidth: 145 },
+  { key: 'clientName',  label: 'Cliente',          defaultWidth: 155 },
+  { key: 'carModel',    label: 'Modelo',           defaultWidth: 135 },
+  { key: 'serviceType', label: 'Tipo',             defaultWidth: 185 },
+  { key: 'ramp',        label: 'Rampa',            defaultWidth: 85  },
+  { key: 'status',      label: 'Estado',           defaultWidth: 155 },
 ];
 
 const ACTIONS_W = 116;
@@ -73,6 +74,7 @@ function getColValue(a: Appointment, key: ColKey): string {
     case 'serviceType': return SERVICE_LABELS[a.serviceType] ?? a.serviceType;
     case 'ramp':        return formatRamp(a.ramp);
     case 'status':      return STATUS_LABELS[a.status] ?? a.status;
+    case 'workOrder':   return a.workOrder ?? '';
   }
 }
 
@@ -550,6 +552,18 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
                       <Clock size={11} className="text-gray-400 shrink-0" />
                       {appt.startTime}–{appt.endTime}
                     </span>
+                  </td>
+                  {/* orden de trabajo */}
+                  <td className="px-3 py-2.5 border-r border-gray-100 truncate">
+                    {appt.workOrder
+                      ? (
+                        <span className="flex items-center gap-1 text-xs text-gray-700">
+                          <FileText size={11} className="text-gray-400 shrink-0" />
+                          {appt.workOrder}
+                        </span>
+                      )
+                      : <span className="text-gray-300 text-xs">—</span>
+                    }
                   </td>
                   {/* asesor */}
                   <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
