@@ -250,6 +250,7 @@ export default function DashboardPage() {
           initial={editAppt}
           ramp={selectedRamp ?? undefined}
           startTime={selectedTime}
+          existingAppointments={appointments}
           onClose={() => setShowForm(false)}
           onSaved={() => setShowForm(false)}
         />

@@ -33,11 +33,18 @@ const DEFAULT: Partial<Appointment> = {
   maintenanceLevel: 1,
 };
 
+function sameRamp(a: Ramp | null | undefined, b: Ramp | null | undefined): boolean {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return Number(a) === Number(b);
+}
+
 function findConflict(existing: Appointment[], form: Partial<Appointment>, editingId?: string): Appointment | null {
   if (!form.ramp || !form.startTime || !form.endTime || !form.date) return null;
   for (const appt of existing) {
     if (appt.id === editingId) continue;
-    if (appt.date !== form.date || appt.ramp !== form.ramp) continue;
+    if (appt.status === 'NO_SHOW') continue;
+    if (appt.date !== form.date || !sameRamp(appt.ramp, form.ramp)) continue;
     if (form.startTime < appt.endTime && form.endTime > appt.startTime) return appt;
   }
   return null;
@@ -54,7 +61,7 @@ function findNextSlot(
   if (duration <= 0) return null;
 
   const rampAppts = existing
-    .filter((a) => a.id !== editingId && a.date === form.date && a.ramp === form.ramp)
+    .filter((a) => a.id !== editingId && a.date === form.date && a.status !== 'NO_SHOW' && sameRamp(a.ramp, form.ramp))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   let candidate = timeToMinutes(form.startTime);
