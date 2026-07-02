@@ -8,9 +8,9 @@ import DailyIndicatorTable from '@/components/DailyIndicator';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import { Appointment, DailyIndicator, Ramp } from '@/types';
-import { subscribeToAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
+import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { getDailyIndicator } from '@/lib/firestore/indicators';
-import { todayISO, formatDate } from '@/lib/utils';
+import { todayISO, formatDate, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -72,8 +72,36 @@ export default function DashboardPage() {
 
   async function handleDelete(appt: Appointment) {
     if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
-    await deleteAppointment(appt.id!);
+    await deleteAppointment(appt.id!, date);
     toast.success('Cita eliminada');
+  }
+
+  async function handleMove(
+    appt: Appointment,
+    targetRamp: Ramp | null,
+    targetType: string,
+    targetTime: string,
+  ) {
+    try {
+      if (targetType === 'wash') {
+        await updateAppointment(appt.id!, { status: 'LAVADO', lavadoStartTime: targetTime }, date);
+      } else if (targetType === 'no_show') {
+        await updateAppointment(appt.id!, { status: 'NO_SHOW', ramp: null }, date);
+      } else {
+        const duration   = Math.max(timeToMinutes(appt.endTime) - timeToMinutes(appt.startTime), 30);
+        const newEnd     = minutesToTime(timeToMinutes(targetTime) + duration);
+        const wasSpecial = appt.status === 'LAVADO' || appt.status === 'NO_SHOW';
+        await updateAppointment(appt.id!, {
+          ramp: targetRamp,
+          startTime: targetTime,
+          endTime: newEnd,
+          ...(wasSpecial ? { status: 'PROGRAMADO' } : {}),
+        }, date);
+      }
+      toast.success('Cita movida');
+    } catch {
+      toast.error('Error al mover la cita');
+    }
   }
 
   return (
@@ -125,6 +153,7 @@ export default function DashboardPage() {
               onSlotClick={perms.create ? handleSlotClick : undefined}
               onSelect={handleSelectAppt}
               onDelete={perms.delete ? handleDelete : undefined}
+              onMove={perms.update ? handleMove : undefined}
             />
           )}
         </div>
