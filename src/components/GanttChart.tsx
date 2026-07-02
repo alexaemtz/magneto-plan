@@ -92,7 +92,7 @@ export default function GanttChart({
     if (rowLabel === 'LAVADO') {
       return appts.find((a) => {
         const start = timeToMinutes(a.lavadoStartTime ?? a.startTime);
-        return slotMin >= start && slotMin < start + WASH_MIN;
+        return slotMin >= start && slotMin < start + Math.ceil(WASH_MIN / 30) * 30;
       });
     }
 
@@ -103,9 +103,9 @@ export default function GanttChart({
     });
   }
 
-  // Number of 30-min slots spanned by a block (LAVADO is always 45 min = 1.5 slots)
+  // Number of 30-min slots spanned by a block (LAVADO rounds up to 2 full slots)
   function getSpan(a: Appointment, rowLabel: string): number {
-    if (rowLabel === 'LAVADO') return WASH_MIN / 30;
+    if (rowLabel === 'LAVADO') return Math.ceil(WASH_MIN / 30);
     const diff = timeToMinutes(a.endTime) - timeToMinutes(a.startTime);
     return Math.max(1, Math.ceil(diff / 30));
   }
@@ -170,7 +170,7 @@ export default function GanttChart({
               </div>
 
               {/* Cells */}
-              <div className="relative flex flex-1">
+              <div className="relative flex" style={{ width: totalWidth - 112 }}>
                 {slots.map((t) => {
                   const occupant = getOccupant(row.label, t);
 

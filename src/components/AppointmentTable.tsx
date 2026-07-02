@@ -2,13 +2,11 @@
 
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatRamp } from '@/lib/utils';
+import { formatRamp, SERVICE_LABELS, SERVICE_COLORS_LIGHT, cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
-import { Appointment, AppointmentStatus, ServiceType } from '@/types';
-import { SERVICE_LABELS } from '@/lib/utils';
+import { Appointment, AppointmentStatus } from '@/types';
 import { deleteAppointment } from '@/lib/firestore/appointments';
 import AppointmentForm from './AppointmentForm';
-import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import {
   Search, Pencil, Trash2, Eye, X,
@@ -29,25 +27,13 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
 };
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'bg-teal-100 text-teal-700',
-  PROGRAMADO:          'bg-blue-100 text-blue-700',
-  EN_PROCESO:          'bg-amber-100 text-amber-700',
-  COMPLETADO:          'bg-green-100 text-green-700',
-  LAVADO:              'bg-sky-100 text-sky-600',
-  NO_SHOW:             'bg-gray-100 text-gray-500',
-  ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700',
-};
-
-const SERVICE_BADGE: Record<ServiceType, string> = {
-  SERVICIO:             'bg-green-50 text-green-700',
-  GARANTIA:             'bg-purple-50 text-purple-700',
-  DIAGNOSTICO:          'bg-yellow-50 text-yellow-700',
-  SERVICIO_DIAGNOSTICO: 'bg-blue-50 text-blue-700',
-  SERVICIO_GARANTIA:    'bg-blue-50 text-blue-700',
-  ALINEACION_BALANCEO:  'bg-indigo-50 text-indigo-700',
-  BALANCEO:             'bg-indigo-50 text-indigo-600',
-  GARANTIA_DIAGNOSTICO: 'bg-violet-50 text-violet-700',
-  SIN_CITA:             'bg-rose-50 text-rose-700',
+  RECIBIDO:            'bg-teal-100 text-teal-700 border border-teal-300',
+  PROGRAMADO:          'bg-blue-100 text-blue-700 border border-blue-300',
+  EN_PROCESO:          'bg-amber-100 text-amber-700 border border-amber-300',
+  COMPLETADO:          'bg-green-100 text-green-700 border border-green-300',
+  LAVADO:              'bg-sky-100 text-sky-600 border border-sky-300',
+  NO_SHOW:             'bg-gray-100 text-gray-500 border border-gray-300',
+  ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700 border border-orange-300',
 };
 
 type ColKey = 'date' | 'startTime' | 'advisor' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
@@ -188,7 +174,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
 
       {/* Badges */}
       <div className="flex gap-2 px-5 py-3 border-b border-gray-100">
-        <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', SERVICE_BADGE[appt.serviceType])}>
+        <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold border', SERVICE_COLORS_LIGHT[appt.serviceType])}>
           {SERVICE_LABELS[appt.serviceType]}
         </span>
         <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', STATUS_COLORS[appt.status])}>
@@ -586,7 +572,7 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
                   </td>
                   {/* tipo */}
                   <td className="px-3 py-2.5 border-r border-gray-100">
-                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap', SERVICE_BADGE[appt.serviceType])}>
+                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border', SERVICE_COLORS_LIGHT[appt.serviceType])}>
                       {SERVICE_LABELS[appt.serviceType]}
                     </span>
                   </td>

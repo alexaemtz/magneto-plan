@@ -22,13 +22,13 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 };
 
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'bg-teal-100 text-teal-700',
-  PROGRAMADO:          'bg-blue-100 text-blue-700',
-  EN_PROCESO:          'bg-amber-100 text-amber-700',
-  COMPLETADO:          'bg-green-100 text-green-700',
-  LAVADO:              'bg-sky-100 text-sky-600',
-  NO_SHOW:             'bg-gray-100 text-gray-500',
-  ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700',
+  RECIBIDO:            'bg-teal-100 text-teal-700 border border-teal-300',
+  PROGRAMADO:          'bg-blue-100 text-blue-700 border border-blue-300',
+  EN_PROCESO:          'bg-amber-100 text-amber-700 border border-amber-300',
+  COMPLETADO:          'bg-green-100 text-green-700 border border-green-300',
+  LAVADO:              'bg-sky-100 text-sky-600 border border-sky-300',
+  NO_SHOW:             'bg-gray-100 text-gray-500 border border-gray-300',
+  ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700 border border-orange-300',
 };
 
 function Row({ icon, label, value }: { icon?: React.ReactNode; label: string; value: React.ReactNode }) {
