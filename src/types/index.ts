@@ -40,6 +40,7 @@ export interface Appointment {
   status: AppointmentStatus;
   km?: number;
   notes?: string;
+  lavadoStartTime?: string; // time placed in the LAVADO row — independent of ramp startTime/endTime
   // Service-specific
   maintenanceLevel?: MaintenanceLevel;
   warrantyType?: string;

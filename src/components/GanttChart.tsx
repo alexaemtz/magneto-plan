@@ -1,15 +1,18 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Appointment, AppointmentStatus, Ramp } from '@/types';
 import {
   generateTimeSlots,
   timeToMinutes,
+  minutesToTime,
   SERVICE_COLORS_LIGHT,
   SERVICE_LABELS,
   cn,
 } from '@/lib/utils';
+
+const WASH_MIN = 45; // fixed duration for LAVADO blocks
 
 interface GanttChartProps {
   appointments: Appointment[];
@@ -17,6 +20,7 @@ interface GanttChartProps {
   onSlotClick?: (ramp: Ramp | null, time: string) => void;
   onSelect?: (appt: Appointment) => void;
   onDelete?: (appt: Appointment) => void;
+  onMove?: (appt: Appointment, targetRamp: Ramp | null, targetType: string, targetTime: string) => void;
 }
 
 const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
@@ -43,12 +47,22 @@ const STATUS_DOT: Record<AppointmentStatus, string> = {
 const SLOT_WIDTH = 80; // px per 30-min slot
 const ROW_HEIGHT = 56; // px
 
-export default function GanttChart({ appointments, date, onSlotClick, onSelect, onDelete }: GanttChartProps) {
-  const [tooltip, setTooltip] = useState<{ appt: Appointment; x: number; y: number } | null>(null);
+export default function GanttChart({
+  appointments,
+  date: _date,
+  onSlotClick,
+  onSelect,
+  onDelete,
+  onMove,
+}: GanttChartProps) {
+  const [tooltip, setTooltip]     = useState<{ appt: Appointment; x: number; y: number } | null>(null);
+  const [dragAppt, setDragAppt]   = useState<Appointment | null>(null);
+  const [dragOver, setDragOver]   = useState<{ rowLabel: string; slotTime: string } | null>(null);
+  const [hoveredCell, setHovered] = useState<string | null>(null);
 
   const slots = useMemo(() => generateTimeSlots('07:00', '19:00', 30), []);
 
-  // Build a lookup: ramp -> list of appointments (sorted by startTime)
+  // Route each appointment to its display row
   const byRamp = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     RAMPS.forEach((r) => map.set(r.label, []));
@@ -56,8 +70,12 @@ export default function GanttChart({ appointments, date, onSlotClick, onSelect, 
     appointments.forEach((a) => {
       if (a.status === 'NO_SHOW') {
         map.get('NO SHOW')!.push(a);
+      } else if (a.status === 'LAVADO') {
+        map.get('LAVADO')!.push(a);
       } else if (a.ramp) {
-        map.get(`RAMPA ${a.ramp}`)!.push(a);
+        // Use RAMPS array lookup so ALINEADOR (ramp 6) is correctly routed
+        const row = RAMPS.find((r) => r.ramp === a.ramp);
+        if (row) map.get(row.label)?.push(a);
       } else {
         map.get('SIN RAMPA')!.push(a);
       }
@@ -65,34 +83,44 @@ export default function GanttChart({ appointments, date, onSlotClick, onSelect, 
     return map;
   }, [appointments]);
 
-  // For a given row and slot, find the appointment that occupies it
+  // Find the appointment occupying a given slot in a given row
   function getOccupant(rowLabel: string, slotTime: string): Appointment | undefined {
     const appts = byRamp.get(rowLabel) ?? [];
     const slotMin = timeToMinutes(slotTime);
+
+    if (rowLabel === 'LAVADO') {
+      return appts.find((a) => {
+        const start = timeToMinutes(a.lavadoStartTime ?? a.startTime);
+        return slotMin >= start && slotMin < start + WASH_MIN;
+      });
+    }
+
     return appts.find((a) => {
       const start = timeToMinutes(a.startTime);
-      const end = timeToMinutes(a.endTime);
+      const end   = timeToMinutes(a.endTime);
       return slotMin >= start && slotMin < end;
     });
   }
 
-  // Calculate span (number of 30-min slots) for an appointment
-  function getSpan(a: Appointment): number {
+  // Number of 30-min slots spanned by a block (LAVADO is always 45 min = 1.5 slots)
+  function getSpan(a: Appointment, rowLabel: string): number {
+    if (rowLabel === 'LAVADO') return WASH_MIN / 30;
     const diff = timeToMinutes(a.endTime) - timeToMinutes(a.startTime);
     return Math.max(1, Math.ceil(diff / 30));
   }
 
-  // Track which appointments have already been rendered to avoid duplicates
-  const rendered = new Set<string>();
-
-  const totalWidth = slots.length * SLOT_WIDTH + 120;
+  const rendered    = new Set<string>();
+  const totalWidth  = slots.length * SLOT_WIDTH + 112;
 
   return (
     <div className="relative overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm">
       {/* Legend */}
       <div className="flex flex-wrap gap-3 px-4 py-3 border-b border-gray-100 bg-gray-50">
         {Object.entries(SERVICE_LABELS).map(([key, label]) => (
-          <span key={key} className={cn('text-xs px-2 py-0.5 rounded-full border font-medium', SERVICE_COLORS_LIGHT[key as keyof typeof SERVICE_COLORS_LIGHT])}>
+          <span
+            key={key}
+            className={cn('text-xs px-2 py-0.5 rounded-full border font-medium', SERVICE_COLORS_LIGHT[key as keyof typeof SERVICE_COLORS_LIGHT])}
+          >
             {label}
           </span>
         ))}
@@ -142,26 +170,51 @@ export default function GanttChart({ appointments, date, onSlotClick, onSelect, 
 
               {/* Cells */}
               <div className="relative flex flex-1">
-                {slots.map((t, i) => {
+                {slots.map((t) => {
                   const occupant = getOccupant(row.label, t);
 
                   if (occupant) {
+                    // Already rendered by a previous slot (multi-slot span) — zero-width placeholder
                     if (rendered.has(occupant.id!)) {
-                      // Zero-width — the rendered block already covers this slot visually.
-                      // A non-zero width here would misalign everything to the right.
-                      return <div key={t} style={{ width: 0 }} className="shrink-0" />;
+                      return (
+                        <div
+                          key={t}
+                          style={{ width: 0 }}
+                          className="shrink-0"
+                          onDragOver={(e) => { if (dragAppt && onMove) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (dragAppt && onMove) onMove(dragAppt, row.ramp, row.type, t);
+                            setDragAppt(null);
+                            setDragOver(null);
+                          }}
+                        />
+                      );
                     }
+
                     rendered.add(occupant.id!);
-                    const span = getSpan(occupant);
+                    const span       = getSpan(occupant, row.label);
+                    const isDragging = dragAppt?.id === occupant.id;
+
                     return (
                       <div
                         key={t}
-                        style={{ width: SLOT_WIDTH * span, minWidth: SLOT_WIDTH * span }}
+                        draggable={!!onMove}
+                        style={{ width: SLOT_WIDTH * span, minWidth: SLOT_WIDTH * span, opacity: isDragging ? 0.4 : 1 }}
                         className={cn(
-                          'group shrink-0 relative border-r border-white cursor-pointer rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden flex flex-col justify-center gap-0.5 hover:brightness-95 transition-all',
-                          SERVICE_COLORS_LIGHT[occupant.serviceType]
+                          'shrink-0 relative border-r border-white rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden',
+                          'flex flex-col justify-center gap-0.5 transition-all hover:brightness-95',
+                          onMove ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+                          SERVICE_COLORS_LIGHT[occupant.serviceType],
                         )}
-                        onClick={() => onSelect?.(occupant)}
+                        onDragStart={(e) => {
+                          setDragAppt(occupant);
+                          setTooltip(null);
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', occupant.id ?? '');
+                        }}
+                        onDragEnd={() => { setDragAppt(null); setDragOver(null); }}
+                        onClick={() => { if (!isDragging) onSelect?.(occupant); }}
                         onMouseEnter={(e) => setTooltip({ appt: occupant, x: e.clientX, y: e.clientY })}
                         onMouseLeave={() => setTooltip(null)}
                       >
@@ -185,13 +238,49 @@ export default function GanttChart({ appointments, date, onSlotClick, onSelect, 
                     );
                   }
 
+                  // Empty cell
+                  const cellKey     = `${row.label}:${t}`;
+                  const isDragTarget = dragOver?.rowLabel === row.label && dragOver?.slotTime === t;
+                  const isHovered   = hoveredCell === cellKey;
+
                   return (
                     <div
                       key={t}
                       style={{ width: SLOT_WIDTH, minWidth: SLOT_WIDTH }}
-                      className="shrink-0 border-r border-gray-100 cursor-pointer hover:bg-blue-50/50 transition-colors"
-                      onClick={() => onSlotClick?.(row.ramp, t)}
-                    />
+                      className={cn(
+                        'shrink-0 border-r relative transition-colors',
+                        isDragTarget
+                          ? 'bg-blue-100 border-blue-400'
+                          : 'border-gray-100 hover:bg-blue-50/50',
+                        onSlotClick && !dragAppt ? 'cursor-pointer' : '',
+                      )}
+                      onClick={() => { if (!dragAppt) onSlotClick?.(row.ramp, t); }}
+                      onMouseEnter={() => { if (!dragAppt) setHovered(cellKey); }}
+                      onMouseLeave={() => setHovered(null)}
+                      onDragOver={(e) => {
+                        if (!dragAppt || !onMove) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        setDragOver({ rowLabel: row.label, slotTime: t });
+                      }}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragAppt && onMove) onMove(dragAppt, row.ramp, row.type, t);
+                        setDragAppt(null);
+                        setDragOver(null);
+                      }}
+                    >
+                      {onSlotClick && !dragAppt && isHovered && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <Plus size={10} className="text-blue-600" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -201,9 +290,9 @@ export default function GanttChart({ appointments, date, onSlotClick, onSelect, 
       </div>
 
       {/* Tooltip */}
-      {tooltip && (
+      {tooltip && !dragAppt && (
         <div
-          className="fixed z-50 pointer-events-none bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 max-w-xs"
+          className="fixed z-50 pointer-events-none bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 max-w-xs space-y-0.5"
           style={{ left: tooltip.x + 12, top: tooltip.y - 10 }}
         >
           <p className="font-bold">{tooltip.appt.carModel} — {SERVICE_LABELS[tooltip.appt.serviceType]}</p>
@@ -211,8 +300,13 @@ export default function GanttChart({ appointments, date, onSlotClick, onSelect, 
           <p>Cliente: {tooltip.appt.clientName}</p>
           <p>Tel: {tooltip.appt.clientPhone}</p>
           <p>Asesor: {tooltip.appt.advisor}</p>
-          <p>Horario: {tooltip.appt.startTime} – {tooltip.appt.endTime}</p>
-          {tooltip.appt.km && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
+          <p>En rampa: {tooltip.appt.startTime} – {tooltip.appt.endTime}</p>
+          {tooltip.appt.status === 'LAVADO' && tooltip.appt.lavadoStartTime && (
+            <p className="text-sky-300">
+              Lavado: {tooltip.appt.lavadoStartTime} – {minutesToTime(timeToMinutes(tooltip.appt.lavadoStartTime) + WASH_MIN)}
+            </p>
+          )}
+          {tooltip.appt.km != null && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
         </div>
       )}
     </div>

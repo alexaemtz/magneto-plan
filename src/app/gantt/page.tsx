@@ -8,8 +8,8 @@ import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import AppointmentTable from '@/components/AppointmentTable';
 import { Appointment, Ramp } from '@/types';
-import { subscribeToAppointmentsByDate, deleteAppointment } from '@/lib/firestore/appointments';
-import { todayISO, formatDate, isoToDisplay } from '@/lib/utils';
+import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
+import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -69,8 +69,38 @@ export default function GanttPage() {
 
   async function handleDelete(appt: Appointment) {
     if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
-    await deleteAppointment(appt.id!);
+    await deleteAppointment(appt.id!, date);
     toast.success('Cita eliminada');
+  }
+
+  async function handleMove(
+    appt: Appointment,
+    targetRamp: Ramp | null,
+    targetType: string,
+    targetTime: string,
+  ) {
+    try {
+      if (targetType === 'wash') {
+        // Keep ramp service times unchanged; only set wash position and status
+        await updateAppointment(appt.id!, { status: 'LAVADO', lavadoStartTime: targetTime }, date);
+      } else if (targetType === 'no_show') {
+        await updateAppointment(appt.id!, { status: 'NO_SHOW', ramp: null }, date);
+      } else {
+        // Moving to a ramp or SIN RAMPA — preserve original service duration
+        const duration = Math.max(timeToMinutes(appt.endTime) - timeToMinutes(appt.startTime), 30);
+        const newEnd   = minutesToTime(timeToMinutes(targetTime) + duration);
+        const wasSpecial = appt.status === 'LAVADO' || appt.status === 'NO_SHOW';
+        await updateAppointment(appt.id!, {
+          ramp: targetRamp,
+          startTime: targetTime,
+          endTime: newEnd,
+          ...(wasSpecial ? { status: 'PROGRAMADO' } : {}),
+        }, date);
+      }
+      toast.success('Cita movida');
+    } catch {
+      toast.error('Error al mover la cita');
+    }
   }
 
   return (
@@ -165,6 +195,7 @@ export default function GanttPage() {
               onSlotClick={perms.create ? handleSlotClick : undefined}
               onSelect={handleSelectAppt}
               onDelete={perms.delete ? handleDelete : undefined}
+              onMove={perms.update ? handleMove : undefined}
             />
           )
         ) : (
