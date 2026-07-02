@@ -114,7 +114,8 @@ export default function GanttChart({
   const totalWidth  = slots.length * SLOT_WIDTH + 112;
 
   return (
-    <div className="relative overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="w-full overflow-x-auto">
+    <div className="relative rounded-xl border border-gray-200 bg-white shadow-sm" style={{ width: 'fit-content' }}>
       {/* Legend */}
       <div className="flex flex-wrap gap-3 px-4 py-3 border-b border-gray-100 bg-gray-50">
         {Object.entries(SERVICE_LABELS).map(([key, label]) => (
@@ -142,6 +143,7 @@ export default function GanttChart({
               {t}
             </div>
           ))}
+          <div className="flex-1" />
         </div>
 
         {/* Rows */}
@@ -170,7 +172,7 @@ export default function GanttChart({
               </div>
 
               {/* Cells */}
-              <div className="relative flex" style={{ width: totalWidth - 112 }}>
+              <div className="relative flex flex-1">
                 {slots.map((t) => {
                   const occupant = getOccupant(row.label, t);
 
@@ -203,7 +205,7 @@ export default function GanttChart({
                         draggable={!!onMove}
                         style={{ width: SLOT_WIDTH * span, minWidth: SLOT_WIDTH * span, opacity: isDragging ? 0.4 : 1 }}
                         className={cn(
-                          'shrink-0 relative border-r border-white rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden',
+                          'shrink-0 relative rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden',
                           'flex flex-col justify-center gap-0.5 transition-all hover:brightness-95',
                           onMove ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                           SERVICE_COLORS_LIGHT[occupant.serviceType],
@@ -284,6 +286,7 @@ export default function GanttChart({
                     </div>
                   );
                 })}
+                <div className="flex-1" />
               </div>
             </div>
           );
@@ -310,6 +313,7 @@ export default function GanttChart({
           {tooltip.appt.km != null && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
         </div>
       )}
+    </div>
     </div>
   );
 }
