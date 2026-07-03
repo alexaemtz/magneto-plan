@@ -38,6 +38,7 @@ export interface Appointment {
   workOrder: string;
   ramp: Ramp | null;
   advisor: string;
+  tecnico?: string;
   startTime: string; // HH:MM
   endTime: string;   // HH:MM
   status: AppointmentStatus;
@@ -91,6 +92,12 @@ export interface Advisor {
   id?: string;
   name: string;
   email?: string;
+  active: boolean;
+}
+
+export interface Tecnico {
+  id?: string;
+  name: string;
   active: boolean;
 }
 

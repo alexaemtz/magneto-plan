@@ -8,7 +8,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Advisor, CarModel } from '@/types';
+import { Advisor, CarModel, Tecnico } from '@/types';
 import { cacheGet, cacheSet, cacheInvalidate, TTL } from '@/lib/cache';
 
 function sortByName<T extends { name: string }>(items: T[]): T[] {
@@ -78,4 +78,36 @@ export async function createCarModel(data: Omit<CarModel, 'id'>): Promise<string
 export async function updateCarModel(id: string, data: Partial<CarModel>): Promise<void> {
   await updateDoc(doc(db, 'carModels', id), data);
   cacheInvalidate(MODEL_KEY, MODEL_A_KEY);
+}
+
+// ── Técnicos ──────────────────────────────────────────────────────────────────
+
+const TECNICO_KEY   = 'tecnicos';
+const TECNICO_A_KEY = 'tecnicos:active';
+
+export async function getTecnicos(onlyActive = false): Promise<Tecnico[]> {
+  let all = cacheGet<Tecnico[]>(TECNICO_KEY, TTL.CATALOG);
+  if (!all) {
+    const snap = await getDocs(query(collection(db, 'tecnicos')));
+    all = sortByName(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Tecnico)));
+    cacheSet(TECNICO_KEY, all);
+  }
+  if (!onlyActive) return all;
+  const active = all.filter((t) => t.active);
+  cacheSet(TECNICO_A_KEY, active);
+  return active;
+}
+
+export async function createTecnico(data: Omit<Tecnico, 'id'>): Promise<string> {
+  const ref = await addDoc(collection(db, 'tecnicos'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+  cacheInvalidate(TECNICO_KEY, TECNICO_A_KEY);
+  return ref.id;
+}
+
+export async function updateTecnico(id: string, data: Partial<Tecnico>): Promise<void> {
+  await updateDoc(doc(db, 'tecnicos', id), data);
+  cacheInvalidate(TECNICO_KEY, TECNICO_A_KEY);
 }

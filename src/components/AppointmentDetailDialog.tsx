@@ -109,6 +109,7 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
           <Row icon={<Clock size={14} />}  label="Horario"    value={`${appt.startTime} – ${appt.endTime}`} />
           <Row icon={<Wrench size={14} />} label="Rampa"      value={rampLabel} />
           <Row icon={<User size={14} />}   label="Asesor"     value={appt.advisor} />
+          <Row icon={<User size={14} />}   label="Técnico"    value={appt.tecnico} />
           <Row icon={<User size={14} />}   label="Cliente"    value={appt.clientName} />
           <Row icon={<Phone size={14} />}  label="Teléfono"   value={appt.clientPhone} />
           <Row icon={<Car size={14} />}    label="VIN / Serie" value={appt.serialNumber} />

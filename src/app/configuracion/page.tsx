@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/AppShell';
-import { Advisor, CarModel, UserProfile } from '@/types';
-import { getAdvisors, createAdvisor, updateAdvisor, getCarModels, createCarModel, updateCarModel } from '@/lib/firestore/catalog';
+import { Advisor, CarModel, Tecnico, UserProfile } from '@/types';
+import { getAdvisors, createAdvisor, updateAdvisor, getCarModels, createCarModel, updateCarModel, getTecnicos, createTecnico, updateTecnico } from '@/lib/firestore/catalog';
 import { getUsersList, setUserRole, setUserActive } from '@/lib/firestore/users';
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Pencil, Check, X, Upload, Shield, ShieldOff } from 'lucide-react';
@@ -353,14 +353,16 @@ export default function ConfiguracionPage() {
   const { user, isAdmin } = useAuth();
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [carModels, setCarModels] = useState<CarModel[]>([]);
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     setLoading(true);
     try {
-      const [a, c] = await Promise.all([getAdvisors(), getCarModels()]);
+      const [a, c, t] = await Promise.all([getAdvisors(), getCarModels(), getTecnicos()]);
       setAdvisors(a);
       setCarModels(c);
+      setTecnicos(t);
     } catch (err) {
       console.error('Error cargando catálogos:', err);
       toast.error('Error al cargar los catálogos.');
@@ -391,6 +393,26 @@ export default function ConfiguracionPage() {
     load();
   }
 
+  // ── Técnicos ──
+  async function addTecnico(name: string) {
+    await createTecnico({ name, active: true });
+    toast.success('Técnico agregado');
+    load();
+  }
+  async function bulkAddTecnicos(names: string[]) {
+    await Promise.all(names.map((n) => createTecnico({ name: n, active: true })));
+    load();
+  }
+  async function toggleTecnico(t: Tecnico) {
+    await updateTecnico(t.id!, { active: !t.active });
+    load();
+  }
+  async function renameTecnico(id: string, name: string) {
+    await updateTecnico(id, { name });
+    toast.success('Técnico actualizado');
+    load();
+  }
+
   // ── Car models ──
   async function addCarModel(name: string) {
     await createCarModel({ name, active: true });
@@ -417,7 +439,7 @@ export default function ConfiguracionPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Catálogos de asesores y modelos de auto
+            Catálogos de asesores, técnicos y modelos de auto
             {!isAdmin && ' — solo lectura, contacta a un administrador para realizar cambios'}
           </p>
         </div>
@@ -427,7 +449,7 @@ export default function ConfiguracionPage() {
             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <CatalogSection
               title="Asesores"
               items={advisors}
@@ -436,6 +458,15 @@ export default function ConfiguracionPage() {
               onBulkAdd={bulkAddAdvisors}
               onToggle={toggleAdvisor}
               onRename={renameAdvisor}
+            />
+            <CatalogSection
+              title="Técnicos"
+              items={tecnicos}
+              readOnly={!isAdmin}
+              onAdd={addTecnico}
+              onBulkAdd={bulkAddTecnicos}
+              onToggle={toggleTecnico}
+              onRename={renameTecnico}
             />
             <CatalogSection
               title="Modelos BYD"

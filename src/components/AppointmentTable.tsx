@@ -40,13 +40,14 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   CARRY_OVER:          'bg-purple-100 text-purple-700 border border-purple-300',
 };
 
-type ColKey = 'date' | 'startTime' | 'advisor' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
+type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
 
 const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'date',        label: 'Fecha',            defaultWidth: 110 },
   { key: 'startTime',   label: 'Hora',             defaultWidth: 110 },
   { key: 'workOrder',   label: 'Orden de trabajo', defaultWidth: 130 },
-  { key: 'advisor',     label: 'Asesor',           defaultWidth: 145 },
+  { key: 'advisor',     label: 'Asesor',           defaultWidth: 135 },
+  { key: 'tecnico',     label: 'Técnico',          defaultWidth: 135 },
   { key: 'clientName',  label: 'Cliente',          defaultWidth: 155 },
   { key: 'carModel',    label: 'Modelo',           defaultWidth: 135 },
   { key: 'serviceType', label: 'Tipo',             defaultWidth: 185 },
@@ -61,6 +62,7 @@ function getColValue(a: Appointment, key: ColKey): string {
     case 'date':        return a.date;
     case 'startTime':   return `${a.startTime}–${a.endTime}`;
     case 'advisor':     return a.advisor ?? '';
+    case 'tecnico':     return a.tecnico ?? '';
     case 'clientName':  return a.clientName ?? '';
     case 'carModel':    return a.carModel ?? '';
     case 'serviceType': return SERVICE_LABELS[a.serviceType] ?? a.serviceType;
@@ -210,6 +212,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Servicio</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Asesor" value={appt.advisor} />
+            <Field label="Técnico" value={appt.tecnico} />
             <Field label="Rampa" value={formatRamp(appt.ramp)} />
             <Field label="Orden de trabajo" value={appt.workOrder} />
             <Field label="Nivel mantenimiento" value={appt.maintenanceLevel != null ? `S${appt.maintenanceLevel}` : undefined} />
@@ -364,7 +367,7 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter((a) =>
-        [a.clientName, a.advisor, a.carModel, a.date, a.startTime, a.endTime,
+        [a.clientName, a.advisor, a.tecnico, a.carModel, a.date, a.startTime, a.endTime,
          SERVICE_LABELS[a.serviceType], STATUS_LABELS[a.status], a.workOrder, a.serialNumber]
           .some((v) => v?.toLowerCase().includes(q)),
       );
@@ -560,6 +563,10 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
                   {/* asesor */}
                   <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
                     {appt.advisor || '—'}
+                  </td>
+                  {/* técnico */}
+                  <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
+                    {appt.tecnico || '—'}
                   </td>
                   {/* cliente */}
                   <td className="px-3 py-2.5 border-r border-gray-100 truncate">

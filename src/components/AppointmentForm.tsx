@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Appointment, ServiceType, Ramp, AppointmentStatus } from '@/types';
+import { Appointment, ServiceType, Ramp, AppointmentStatus, Advisor, CarModel, Tecnico } from '@/types';
 import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { createAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { createPendingCase } from '@/lib/firestore/pendingCases';
-import { getAdvisors, getCarModels } from '@/lib/firestore/catalog';
-import { Advisor, CarModel } from '@/types';
+import { getAdvisors, getCarModels, getTecnicos } from '@/lib/firestore/catalog';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 
@@ -92,12 +91,13 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
   });
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [carModels, setCarModels] = useState<CarModel[]>([]);
+  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [catalogsLoading, setCatalogsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([getAdvisors(true), getCarModels(true)])
-      .then(([a, c]) => { setAdvisors(a); setCarModels(c); })
+    Promise.all([getAdvisors(true), getCarModels(true), getTecnicos(true)])
+      .then(([a, c, t]) => { setAdvisors(a); setCarModels(c); setTecnicos(t); })
       .catch((err) => { console.error('Error cargando catálogos:', err); })
       .finally(() => setCatalogsLoading(false));
   }, []);
@@ -310,7 +310,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             {/* Asesor */}
             <div>
               <label className={labelCls}>Asesor *</label>
@@ -323,6 +323,21 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                 </select>
               ) : (
                 <input className={inputCls} placeholder="Agregar asesor en Configuración" value={form.advisor ?? ''} onChange={(e) => set('advisor', e.target.value)} required />
+              )}
+            </div>
+
+            {/* Técnico */}
+            <div>
+              <label className={labelCls}>Técnico</label>
+              {catalogsLoading ? (
+                <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
+              ) : tecnicos.length > 0 ? (
+                <select className={inputCls} value={form.tecnico ?? ''} onChange={(e) => set('tecnico', e.target.value || undefined)}>
+                  <option value="">— Seleccionar —</option>
+                  {tecnicos.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                </select>
+              ) : (
+                <input className={inputCls} placeholder="Agregar técnico en Configuración" value={form.tecnico ?? ''} onChange={(e) => set('tecnico', e.target.value || undefined)} />
               )}
             </div>
 
