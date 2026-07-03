@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Appointment, ServiceType, Ramp, AppointmentStatus } from '@/types';
 import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { createAppointment, updateAppointment } from '@/lib/firestore/appointments';
+import { createPendingCase } from '@/lib/firestore/pendingCases';
 import { getAdvisors, getCarModels } from '@/lib/firestore/catalog';
 import { Advisor, CarModel } from '@/types';
 import toast from 'react-hot-toast';
@@ -158,6 +159,25 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
       } else {
         await createAppointment(data);
         toast.success('Cita creada');
+      }
+      if (data.status === 'CARRY_OVER') {
+        try {
+          await createPendingCase({
+            date: data.date,
+            carModel: data.carModel,
+            vin: data.serialNumber ?? '',
+            reason: 'Carry Over',
+            clientName: data.clientName,
+            clientPhone: data.clientPhone ?? '',
+            workOrder: data.workOrder ?? '',
+            comment: '',
+            partNumber: '',
+            status: 'PENDIENTE',
+          });
+          toast('Caso añadido a Casos Pendientes', { icon: '📋', duration: 4000 });
+        } catch {
+          toast.error('No se pudo crear el caso pendiente automáticamente');
+        }
       }
       onSaved();
     } catch {
@@ -377,6 +397,8 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
               <option value="LAVADO">Lavado</option>
               <option value="NO_SHOW">No show</option>
               <option value="ESPERANDO_REFACCION">Esperando refacción</option>
+              <option value="ENTREGADO">Entregado</option>
+              <option value="CARRY_OVER">Carry Over</option>
             </select>
           </div>
 

@@ -43,6 +43,8 @@ const STATUS_DOT: Record<AppointmentStatus, string> = {
   LAVADO:              'bg-sky-400',
   NO_SHOW:             'bg-red-500',
   ESPERANDO_REFACCION: 'bg-yellow-500',
+  ENTREGADO:           'bg-emerald-500',
+  CARRY_OVER:          'bg-purple-500',
 };
 
 const SLOT_WIDTH = 80; // px per 30-min slot

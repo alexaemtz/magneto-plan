@@ -16,7 +16,9 @@ export type AppointmentStatus =
   | 'COMPLETADO'
   | 'NO_SHOW'
   | 'ESPERANDO_REFACCION'
-  | 'LAVADO';
+  | 'LAVADO'
+  | 'ENTREGADO'
+  | 'CARRY_OVER';
 
 export type Ramp = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -80,6 +82,7 @@ export interface PendingCase {
   comment?: string;
   partNumber?: string;
   stock?: string;
+  workOrder?: string;
   status: string;
   createdAt?: string;
 }

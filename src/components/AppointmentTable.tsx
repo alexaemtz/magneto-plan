@@ -24,6 +24,8 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   LAVADO:              'Lavado',
   NO_SHOW:             'No show',
   ESPERANDO_REFACCION: 'Esperando refacción',
+  ENTREGADO:           'Entregado',
+  CARRY_OVER:          'Carry Over',
 };
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
@@ -34,6 +36,8 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   LAVADO:              'bg-sky-100 text-sky-600 border border-sky-300',
   NO_SHOW:             'bg-gray-100 text-gray-500 border border-gray-300',
   ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700 border border-orange-300',
+  ENTREGADO:           'bg-emerald-100 text-emerald-700 border border-emerald-300',
+  CARRY_OVER:          'bg-purple-100 text-purple-700 border border-purple-300',
 };
 
 type ColKey = 'date' | 'startTime' | 'advisor' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status' | 'workOrder';

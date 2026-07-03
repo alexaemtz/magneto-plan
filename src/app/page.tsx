@@ -162,7 +162,7 @@ export default function DashboardPage() {
         {/* Stats */}
         {(() => {
           const totalHours = appointments.reduce((sum, a) => sum + (a.workHours ?? 0), 0);
-          const hoursDisplay = totalHours % 1 === 0 ? `${totalHours}` : totalHours.toFixed(1);
+          const hoursDisplay = totalHours.toFixed(1);
           return (
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               {[
