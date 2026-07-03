@@ -359,7 +359,11 @@ export default function ConfiguracionPage() {
   async function load() {
     setLoading(true);
     try {
-      const [a, c, t] = await Promise.all([getAdvisors(), getCarModels(), getTecnicos()]);
+      const [a, c, t] = await Promise.all([
+        getAdvisors(),
+        getCarModels(),
+        getTecnicos().catch(() => [] as Tecnico[]),
+      ]);
       setAdvisors(a);
       setCarModels(c);
       setTecnicos(t);

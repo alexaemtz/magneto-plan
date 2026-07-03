@@ -96,7 +96,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([getAdvisors(true), getCarModels(true), getTecnicos(true)])
+    Promise.all([getAdvisors(true), getCarModels(true), getTecnicos(true).catch(() => [] as Tecnico[])])
       .then(([a, c, t]) => { setAdvisors(a); setCarModels(c); setTecnicos(t); })
       .catch((err) => { console.error('Error cargando catálogos:', err); })
       .finally(() => setCatalogsLoading(false));

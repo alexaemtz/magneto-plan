@@ -72,6 +72,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /tecnicos/{docId} {
+      allow read:  if isActive();
+      allow write: if isAdmin();
+    }
+
     // ── Citas ────────────────────────────────────────────────────────────────
     match /appointments/{docId} {
       allow read:   if isActive();
