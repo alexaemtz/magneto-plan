@@ -160,19 +160,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: 'Total del día', value: appointments.length, color: 'text-blue-600' },
-            { label: 'Completados', value: appointments.filter(a => a.status === 'COMPLETADO').length, color: 'text-green-600' },
-            { label: 'En proceso', value: appointments.filter(a => a.status === 'EN_PROCESO').length, color: 'text-amber-600' },
-            { label: 'No show', value: appointments.filter(a => a.status === 'NO_SHOW').length, color: 'text-red-600' },
-          ].map((s) => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-              <p className="text-xs text-gray-500 font-medium">{s.label}</p>
-              <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+        {(() => {
+          const totalHours = appointments.reduce((sum, a) => sum + (a.workHours ?? 0), 0);
+          const hoursDisplay = totalHours % 1 === 0 ? `${totalHours}` : totalHours.toFixed(1);
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {[
+                { label: 'Total del día',  value: appointments.length,                                        unit: '',  color: 'text-blue-600'   },
+                { label: 'Completados',    value: appointments.filter(a => a.status === 'COMPLETADO').length,  unit: '',  color: 'text-green-600'  },
+                { label: 'En proceso',     value: appointments.filter(a => a.status === 'EN_PROCESO').length,  unit: '',  color: 'text-amber-600'  },
+                { label: 'No show',        value: appointments.filter(a => a.status === 'NO_SHOW').length,     unit: '',  color: 'text-red-600'    },
+                { label: 'Horas del día',  value: hoursDisplay,                                               unit: ' h', color: 'text-violet-600' },
+              ].map((s) => (
+                <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
+                  <p className="text-xs text-gray-500 font-medium">{s.label}</p>
+                  <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}{s.unit}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         {/* Gantt */}
         <div>
