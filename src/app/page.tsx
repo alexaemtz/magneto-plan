@@ -167,7 +167,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               {[
                 { label: 'Total del día',  value: appointments.length,                                        unit: '',  color: 'text-blue-600'   },
-                { label: 'Completados',    value: appointments.filter(a => a.status === 'COMPLETADO').length,  unit: '',  color: 'text-green-600'  },
+                { label: 'Entregados',     value: appointments.filter(a => a.status === 'ENTREGADO').length,  unit: '',  color: 'text-green-600'  },
                 { label: 'En proceso',     value: appointments.filter(a => a.status === 'EN_PROCESO').length,  unit: '',  color: 'text-amber-600'  },
                 { label: 'No show',        value: appointments.filter(a => a.status === 'NO_SHOW').length,     unit: '',  color: 'text-red-600'    },
                 { label: 'Horas del día',  value: hoursDisplay,                                               unit: ' h', color: 'text-violet-600' },
