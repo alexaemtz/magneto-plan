@@ -13,6 +13,7 @@ import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from
 import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { useSearch } from '@/context/SearchContext';
 
 type Tab = 'gantt' | 'tabla';
 
@@ -28,6 +29,16 @@ export default function GanttPage() {
   const [selectedTime, setSelectedTime] = useState('08:00');
   const [activeTab, setActiveTab]       = useState<Tab>('gantt');
   const perms                           = usePermissions('gantt');
+  const { query }                       = useSearch();
+
+  const searchedAppts = (() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return appointments;
+    return appointments.filter((a) =>
+      [a.clientName, a.advisor, a.tecnico, a.carModel, a.serialNumber, a.workOrder, a.startTime]
+        .some((v) => v?.toLowerCase().includes(q))
+    );
+  })();
 
   useEffect(() => {
     setLoading(true);
@@ -155,7 +166,7 @@ export default function GanttPage() {
         {/* ── Tabs + subtitle ── */}
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-gray-600 font-medium">
-            {formatDate(date)} — {appointments.length} cita{appointments.length !== 1 ? 's' : ''}
+            {formatDate(date)} — {searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''} cita{searchedAppts.length !== 1 ? 's' : ''}
           </p>
 
           <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
@@ -190,7 +201,7 @@ export default function GanttPage() {
             </div>
           ) : (
             <GanttChart
-              appointments={appointments}
+              appointments={searchedAppts}
               date={date}
               onSlotClick={perms.create ? handleSlotClick : undefined}
               onSelect={handleSelectAppt}
@@ -205,7 +216,7 @@ export default function GanttPage() {
             </div>
           ) : (
             <AppointmentTable
-              appointments={appointments}
+              appointments={searchedAppts}
               date={date}
               onRefresh={() => {}}
             />

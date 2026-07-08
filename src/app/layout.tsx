@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { SearchProvider } from '@/context/SearchContext';
 import { Toaster } from 'react-hot-toast';
 
 const poppins = Poppins({
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${poppins.variable} h-full antialiased`}>
       <body className="min-h-full bg-gray-50">
         <AuthProvider>
-          {children}
+          <SearchProvider>
+            {children}
+          </SearchProvider>
           <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
         </AuthProvider>
       </body>

@@ -8,6 +8,7 @@ import { subscribeToPendingCases, createPendingCase, updatePendingCase, deletePe
 import { todayISO, isoToDisplay } from '@/lib/utils';
 import { Plus, Trash2, Pencil, X, ChevronUp, ChevronDown, ChevronsUpDown, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSearch } from '@/context/SearchContext';
 
 // ── Column definitions ────────────────────────────────────────────────────────
 
@@ -172,9 +173,20 @@ export default function CasosPendientesPage() {
   }
 
   const activeFilterCount = Object.values(filters).filter((s) => s && s.size > 0).length;
+  const { query } = useSearch();
 
   const displayed = useMemo(() => {
     let result = [...cases];
+
+    // Global search bar
+    const q = query.trim().toLowerCase();
+    if (q) {
+      result = result.filter((c) =>
+        [c.clientName, c.carModel, c.vin, c.workOrder, c.reason, c.clientPhone, c.partNumber, c.comment, isoToDisplay(c.date)]
+          .some((v) => v?.toLowerCase().includes(q))
+      );
+    }
+
     for (const [col, vals] of Object.entries(filters) as [ColKey, Set<string>][]) {
       if (vals.size > 0) result = result.filter((c) => vals.has(getColValue(c, col)));
     }
@@ -186,7 +198,7 @@ export default function CasosPendientesPage() {
       });
     }
     return result;
-  }, [cases, filters, sortCol, sortDir]);
+  }, [cases, query, filters, sortCol, sortDir]);
 
   useEffect(() => {
     setLoading(true);

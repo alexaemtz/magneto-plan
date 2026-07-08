@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   CARRY_OVER:          'bg-purple-100 text-purple-700 border border-purple-300',
 };
 
-type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
+type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'vin' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
 
 const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'date',        label: 'Fecha',            defaultWidth: 110 },
@@ -50,6 +50,7 @@ const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'tecnico',     label: 'Técnico',          defaultWidth: 135 },
   { key: 'clientName',  label: 'Cliente',          defaultWidth: 155 },
   { key: 'carModel',    label: 'Modelo',           defaultWidth: 135 },
+  { key: 'vin',         label: 'VIN',              defaultWidth: 150 },
   { key: 'serviceType', label: 'Tipo',             defaultWidth: 185 },
   { key: 'ramp',        label: 'Rampa',            defaultWidth: 85  },
   { key: 'status',      label: 'Estado',           defaultWidth: 155 },
@@ -65,6 +66,7 @@ function getColValue(a: Appointment, key: ColKey): string {
     case 'tecnico':     return a.tecnico ?? '';
     case 'clientName':  return a.clientName ?? '';
     case 'carModel':    return a.carModel ?? '';
+    case 'vin':         return a.serialNumber ?? '';
     case 'serviceType': return SERVICE_LABELS[a.serviceType] ?? a.serviceType;
     case 'ramp':        return formatRamp(a.ramp);
     case 'status':      return STATUS_LABELS[a.status] ?? a.status;
@@ -305,9 +307,10 @@ interface Props {
   appointments: Appointment[];
   date: string;
   onRefresh: () => void;
+  searchQuery?: string;
 }
 
-export default function AppointmentTable({ appointments, date, onRefresh }: Props) {
+export default function AppointmentTable({ appointments, date, onRefresh, searchQuery }: Props) {
   const perms = usePermissions('gantt');
   const [search, setSearch]                 = useState('');
   const [sortCol, setSortCol]               = useState<ColKey | null>(null);
@@ -363,8 +366,8 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
   const rows = useMemo(() => {
     let result = appointments;
 
-    // Global search
-    const q = search.trim().toLowerCase();
+    // Global search (from prop) or internal search bar
+    const q = (searchQuery !== undefined ? searchQuery : search).trim().toLowerCase();
     if (q) {
       result = result.filter((a) =>
         [a.clientName, a.advisor, a.tecnico, a.carModel, a.date, a.startTime, a.endTime,
@@ -389,7 +392,7 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
     }
 
     return result;
-  }, [appointments, search, filters, sortCol, sortDir]);
+  }, [appointments, search, searchQuery, filters, sortCol, sortDir]);
 
   // ── Delete ────────────────────────────────────────────────────────────────
 
@@ -418,20 +421,22 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-56 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por cliente, asesor, modelo, hora…"
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X size={14} />
-            </button>
-          )}
-        </div>
+        {searchQuery === undefined && (
+          <div className="relative flex-1 min-w-56 max-w-sm">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por cliente, asesor, modelo, hora…"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
           {activeFilterCount > 0 && (
@@ -580,6 +585,10 @@ export default function AppointmentTable({ appointments, date, onRefresh }: Prop
                   {/* modelo */}
                   <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
                     {appt.carModel || '—'}
+                  </td>
+                  {/* VIN */}
+                  <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
+                    {appt.serialNumber || <span className="text-gray-300 font-sans">—</span>}
                   </td>
                   {/* tipo */}
                   <td className="px-3 py-2.5 border-r border-gray-100">

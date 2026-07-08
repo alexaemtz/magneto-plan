@@ -13,6 +13,7 @@ import { getDailyIndicator } from '@/lib/firestore/indicators';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSearch } from '@/context/SearchContext';
 
 const makeEmptyIndicator = (date: string): DailyIndicator => ({
   date,
@@ -43,6 +44,16 @@ export default function DashboardPage() {
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('08:00');
+  const { query } = useSearch();
+
+  const searchedAppts = (() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return appointments;
+    return appointments.filter((a) =>
+      [a.clientName, a.advisor, a.tecnico, a.carModel, a.serialNumber, a.workOrder, a.startTime]
+        .some((v) => v?.toLowerCase().includes(q))
+    );
+  })();
 
   useEffect(() => {
     setLoading(true);
@@ -183,14 +194,17 @@ export default function DashboardPage() {
 
         {/* Gantt */}
         <div>
-          <h2 className="text-base font-semibold text-gray-700 mb-3">Magneto Plan — Hoy</h2>
+          <h2 className="text-base font-semibold text-gray-700 mb-3">
+            Magneto Plan — Hoy
+            {query.trim() && <span className="ml-2 text-sm font-normal text-gray-400">({searchedAppts.length} de {appointments.length})</span>}
+          </h2>
           {loading ? (
             <div className="h-48 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <GanttChart
-              appointments={appointments}
+              appointments={searchedAppts}
               date={date}
               onSlotClick={perms.create ? handleSlotClick : undefined}
               onSelect={handleSelectAppt}
@@ -208,13 +222,17 @@ export default function DashboardPage() {
           </div>
 
           <div>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">Citas — {isoToDisplay(date)} ({appointments.length})</h2>
+            <h2 className="text-base font-semibold text-gray-700 mb-3">
+              Citas — {isoToDisplay(date)} ({searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''})
+            </h2>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              {appointments.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">No hay citas para hoy</div>
+              {searchedAppts.length === 0 ? (
+                <div className="py-12 text-center text-gray-400 text-sm">
+                  {query.trim() ? 'Sin resultados para la búsqueda' : 'No hay citas para hoy'}
+                </div>
               ) : (
                 <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                  {appointments.map((a) => (
+                  {searchedAppts.map((a) => (
                     <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50">
                       <div className="text-xs font-mono text-gray-500 w-10 shrink-0">{a.startTime}</div>
                       <div className="flex-1 min-w-0">
