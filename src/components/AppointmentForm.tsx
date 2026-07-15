@@ -93,14 +93,21 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
   const [carModels, setCarModels] = useState<CarModel[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
   const [catalogsLoading, setCatalogsLoading] = useState(true);
+  const [catalogRetry, setCatalogRetry] = useState(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([getAdvisors(true), getCarModels(true), getTecnicos(true).catch(() => [] as Tecnico[])])
-      .then(([a, c, t]) => { setAdvisors(a); setCarModels(c); setTecnicos(t); })
-      .catch((err) => { console.error('Error cargando catálogos:', err); })
-      .finally(() => setCatalogsLoading(false));
-  }, []);
+    setCatalogsLoading(true);
+    Promise.all([
+      getAdvisors(true).catch(() => [] as Advisor[]),
+      getCarModels(true).catch(() => [] as CarModel[]),
+      getTecnicos(true).catch(() => [] as Tecnico[]),
+    ]).then(([a, c, t]) => {
+      setAdvisors(a);
+      setCarModels(c);
+      setTecnicos(t);
+    }).finally(() => setCatalogsLoading(false));
+  }, [catalogRetry]);
 
   useEffect(() => {
     const start = form.startTime;
@@ -241,6 +248,19 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                 <option value="GARANTIA">Garantía</option>
                 <option value="DIAGNOSTICO">Diagnóstico</option>
               </select>
+            </div>
+          )}
+
+          {!catalogsLoading && advisors.length === 0 && carModels.length === 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+              <span>No se pudieron cargar los catálogos.</span>
+              <button
+                type="button"
+                onClick={() => setCatalogRetry((n) => n + 1)}
+                className="shrink-0 font-semibold underline underline-offset-2 hover:text-amber-900 transition-colors"
+              >
+                Reintentar
+              </button>
             </div>
           )}
 
