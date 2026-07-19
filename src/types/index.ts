@@ -107,9 +107,29 @@ export interface CarModel {
   active: boolean;
 }
 
+export type PartsOrderStatus = 'PENDIENTE' | 'ENTREGADO' | 'PEDIDO_ESPECIAL' | 'CANCELADO';
+
+export interface PartsOrder {
+  id?: string;
+  captureDate: string;    // YYYY-MM-DD
+  capturedBy: string;
+  requestedBy?: string;
+  carModel: string;
+  vin: string;
+  clientName: string;
+  partNumber: string;
+  quantity: number;
+  description: string;
+  price: number;          // MXN
+  location: string;
+  status: PartsOrderStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
 export type Role = 'admin' | 'user';
 
-export type PageKey = 'dashboard' | 'gantt' | 'indicador' | 'casosPendientes';
+export type PageKey = 'dashboard' | 'gantt' | 'indicador' | 'casosPendientes' | 'refacciones';
 
 export interface PagePermissions {
   read: boolean;
@@ -123,6 +143,7 @@ export const PAGE_LABELS: Record<PageKey, string> = {
   gantt:           'Magneto Plan',
   indicador:       'Indicador Diario',
   casosPendientes: 'Casos Pendientes',
+  refacciones:     'Refacciones',
 };
 
 export const DEFAULT_PAGE_PERMISSIONS: Record<PageKey, PagePermissions> = {
@@ -130,6 +151,7 @@ export const DEFAULT_PAGE_PERMISSIONS: Record<PageKey, PagePermissions> = {
   gantt:           { read: true, create: false, update: false, delete: false },
   indicador:       { read: true, create: false, update: false, delete: false },
   casosPendientes: { read: true, create: false, update: false, delete: false },
+  refacciones:     { read: true, create: false, update: false, delete: false },
 };
 
 export interface UserProfile {

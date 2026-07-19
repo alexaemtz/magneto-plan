@@ -98,5 +98,13 @@ service cloud.firestore {
       allow update: if isActive() && canUpdate('casosPendientes');
       allow delete: if isActive() && canDelete('casosPendientes');
     }
+
+    // ── Refacciones ───────────────────────────────────────────────────────────
+    match /refacciones/{docId} {
+      allow read:   if isActive();
+      allow create: if isActive() && canCreate('refacciones');
+      allow update: if isActive() && canUpdate('refacciones');
+      allow delete: if isActive() && canDelete('refacciones');
+    }
   }
 }

@@ -89,3 +89,14 @@ export function isoToDisplay(iso: string): string {
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+/**
+ * Normalizes a proper-name string: trims edges, collapses internal spaces,
+ * and capitalizes the first letter of each word.
+ */
+export function normalizeName(s: string): string {
+  return s
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
