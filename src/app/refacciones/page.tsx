@@ -70,6 +70,8 @@ type ColKey =
   | 'carModel'
   | 'vin'
   | 'clientName'
+  | 'clientPhone'
+  | 'invoice'
   | 'partNumber'
   | 'quantity'
   | 'description'
@@ -84,6 +86,8 @@ const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'carModel',     label: 'Modelo',        defaultWidth: 140 },
   { key: 'vin',          label: 'VIN',           defaultWidth: 165 },
   { key: 'clientName',   label: 'Cliente',       defaultWidth: 165 },
+  { key: 'clientPhone',  label: 'Teléfono',      defaultWidth: 130 },
+  { key: 'invoice',      label: 'Factura',       defaultWidth: 90  },
   { key: 'partNumber',   label: 'No. Parte',     defaultWidth: 140 },
   { key: 'quantity',     label: 'Cantidad',      defaultWidth: 130 },
   { key: 'description',  label: 'Descripción',   defaultWidth: 220 },
@@ -102,6 +106,8 @@ function getColValue(o: PartsOrder, key: ColKey): string {
     case 'carModel':     return o.carModel ?? '';
     case 'vin':          return o.vin ?? '';
     case 'clientName':   return o.clientName ?? '';
+    case 'clientPhone':  return o.clientPhone ?? '';
+    case 'invoice':      return o.invoice ? 'Sí' : 'No';
     case 'partNumber':   return o.partNumber ?? '';
     case 'quantity':     return String(o.quantity ?? 0);
     case 'description':  return o.description ?? '';
@@ -318,6 +324,8 @@ function OrderForm({
     carModel:    initial?.carModel    ?? '',
     vin:         initial?.vin         ?? '',
     clientName:  initial?.clientName  ?? '',
+    clientPhone: initial?.clientPhone ?? '',
+    invoice:     initial?.invoice     ?? false,
   });
 
   const [items, setItems] = useState<ItemRow[]>([
@@ -383,6 +391,8 @@ function OrderForm({
         carModel:    header.carModel,
         vin:         header.vin.trim().toUpperCase(),
         clientName:  normalizeName(header.clientName),
+        clientPhone: header.clientPhone.trim(),
+        invoice:     header.invoice,
       };
 
       const toPayload = (item: ItemRow): Omit<PartsOrder, 'id'> => ({
@@ -516,6 +526,27 @@ function OrderForm({
                   value={header.requestedBy}
                   onChange={(e) => setH('requestedBy', e.target.value)}
                 />
+              </div>
+              <div>
+                <label className={lbl}>Teléfono del cliente</label>
+                <input
+                  type="tel"
+                  className={inp}
+                  placeholder="664 000 0000"
+                  value={header.clientPhone}
+                  onChange={(e) => setH('clientPhone', e.target.value)}
+                />
+              </div>
+              <div className="flex items-center">
+                <label className="flex items-center gap-3 cursor-pointer select-none mt-4">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400"
+                    checked={header.invoice}
+                    onChange={(e) => setH('invoice', e.target.checked)}
+                  />
+                  <span className="text-sm font-medium text-gray-700">Requiere factura</span>
+                </label>
               </div>
             </div>
           </div>
@@ -747,7 +778,7 @@ export default function RefaccionesPage() {
     const q = query.trim().toLowerCase();
     if (q) {
       result = result.filter((o) =>
-        [o.clientName, o.carModel, o.vin, o.partNumber, o.description, o.location, o.capturedBy, o.requestedBy, STATUS_LABELS[o.status]]
+        [o.clientName, o.clientPhone, o.carModel, o.vin, o.partNumber, o.description, o.location, o.capturedBy, o.requestedBy, STATUS_LABELS[o.status]]
           .some((v) => v?.toLowerCase().includes(q)),
       );
     }
@@ -1143,6 +1174,15 @@ export default function RefaccionesPage() {
                         </td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-gray-800 border-r border-gray-100 truncate">
                           {order.clientName}
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap">
+                          {order.clientPhone || '—'}
+                        </td>
+                        <td className="px-3 py-2.5 border-r border-gray-100 text-center">
+                          {order.invoice
+                            ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200">Sí</span>
+                            : <span className="text-gray-300 text-xs">—</span>
+                          }
                         </td>
                         <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
                           {order.partNumber}

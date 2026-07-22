@@ -117,6 +117,8 @@ export interface PartsOrder {
   carModel: string;
   vin: string;
   clientName: string;
+  clientPhone?: string;
+  invoice?: boolean;
   partNumber: string;
   quantity: number;
   description: string;
