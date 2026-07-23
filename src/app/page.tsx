@@ -4,27 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
 import AppShell from '@/components/AppShell';
 import GanttChart from '@/components/GanttChart';
-import DailyIndicatorTable from '@/components/DailyIndicator';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
-import { Appointment, DailyIndicator, Ramp } from '@/types';
+import { Appointment, Ramp } from '@/types';
 import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
-import { getDailyIndicator } from '@/lib/firestore/indicators';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearch } from '@/context/SearchContext';
-
-const makeEmptyIndicator = (date: string): DailyIndicator => ({
-  date,
-  citadosServicio: { hoy: 0, realizado: 0, acumulado: 0 },
-  citadosServicioPlusOne: { hoy: 0, realizado: 0, acumulado: 0 },
-  citadosReparacion: { hoy: 0, realizado: 0, acumulado: 0 },
-  citadosRevision: { hoy: 0, realizado: 0, acumulado: 0 },
-  sinCita: { hoy: 0, realizado: 0, acumulado: 0 },
-  totalDia: 0,
-  ingresosTotal: 0,
-});
 
 export default function DashboardPage() {
   const [date, setDate]     = useState(todayISO());
@@ -37,7 +24,6 @@ export default function DashboardPage() {
     setDate(d.toISOString().split('T')[0]);
   }
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [indicator, setIndicator] = useState<DailyIndicator>(makeEmptyIndicator(date));
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | undefined>();
@@ -61,12 +47,6 @@ export default function DashboardPage() {
       setAppointments(appts);
       setLoading(false);
     });
-    getDailyIndicator(date)
-      .then((ind) => setIndicator(ind ?? makeEmptyIndicator(date)))
-      .catch((err) => {
-        console.error('Error cargando indicador:', err);
-        toast.error('Error al cargar los datos. Verifica la configuración de Firebase.');
-      });
     return unsub;
   }, [date]);
 
@@ -214,48 +194,41 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Indicator + list */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">Indicador — {isoToDisplay(date)}</h2>
-            <DailyIndicatorTable indicator={indicator} onSave={setIndicator} />
-          </div>
-
-          <div>
-            <h2 className="text-base font-semibold text-gray-700 mb-3">
-              Citas — {isoToDisplay(date)} ({searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''})
-            </h2>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              {searchedAppts.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">
-                  {query.trim() ? 'Sin resultados para la búsqueda' : 'No hay citas para hoy'}
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                  {searchedAppts.map((a) => (
-                    <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50">
-                      <div className="text-xs font-mono text-gray-500 w-10 shrink-0">{a.startTime}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{a.carModel} — {a.clientName}</p>
-                        <p className="text-xs text-gray-500 truncate">{a.serialNumber} | Asesor: {a.advisor}</p>
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        {perms.update && (
-                          <button onClick={() => handleEditFromDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
-                            <Pencil size={14} />
-                          </button>
-                        )}
-                        {perms.delete && (
-                          <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
+        {/* Citas list */}
+        <div>
+          <h2 className="text-base font-semibold text-gray-700 mb-3">
+            Citas — {isoToDisplay(date)} ({searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''})
+          </h2>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {searchedAppts.length === 0 ? (
+              <div className="py-12 text-center text-gray-400 text-sm">
+                {query.trim() ? 'Sin resultados para la búsqueda' : 'No hay citas para hoy'}
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                {searchedAppts.map((a) => (
+                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50">
+                    <div className="text-xs font-mono text-gray-500 w-10 shrink-0">{a.startTime}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{a.carModel} — {a.clientName}</p>
+                      <p className="text-xs text-gray-500 truncate">{a.serialNumber} | Asesor: {a.advisor}</p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <div className="flex gap-1 shrink-0">
+                      {perms.update && (
+                        <button onClick={() => handleEditFromDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {perms.delete && (
+                        <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
