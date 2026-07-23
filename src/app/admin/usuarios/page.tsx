@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { ShieldCheck, User, X, Save, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const PAGES: PageKey[] = ['dashboard', 'gantt', 'indicador', 'casosPendientes'];
+const PAGES: PageKey[] = ['dashboard', 'gantt', 'casosPendientes', 'refacciones'];
 const PERM_LABELS: Record<keyof PagePermissions, string> = {
   read: 'Ver', create: 'Crear', update: 'Editar', delete: 'Eliminar',
 };

@@ -1,6 +1,10 @@
 'use client';
 
+// TEMPORALMENTE DESHABILITADO — redirige al dashboard hasta que el módulo
+// esté listo para producción. Para rehabilitar: elimina el bloque de redirect
+// y restaura el import useEffect normal.
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import DailyIndicatorTable, { AccumulatedValues } from '@/components/DailyIndicator';
 import { DailyIndicator } from '@/types';
@@ -57,6 +61,11 @@ function computeRunningTotals(indicators: DailyIndicator[]): AccumulatedValues[]
 }
 
 export default function IndicadorPage() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/'); }, [router]);
+  return null;
+
+  // eslint-disable-next-line no-unreachable
   const today = todayISO();
   const [year, setYear]   = useState(parseInt(today.split('-')[0]));
   const [month, setMonth] = useState(parseInt(today.split('-')[1]));

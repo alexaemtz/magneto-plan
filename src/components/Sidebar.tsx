@@ -25,7 +25,6 @@ import toast from 'react-hot-toast';
 const NAV = [
   { href: '/',                 label: 'Dashboard',        icon: LayoutDashboard },
   { href: '/gantt',            label: 'Magneto Plan',     icon: CalendarDays    },
-  { href: '/indicador',        label: 'Indicador Diario', icon: BarChart2       },
   { href: '/casos-pendientes', label: 'Casos Pendientes', icon: ClipboardList   },
   { href: '/refacciones',      label: 'Refacciones',      icon: Package         },
   { href: '/configuracion',    label: 'Configuración',    icon: Settings        },
