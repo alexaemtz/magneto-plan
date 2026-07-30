@@ -32,6 +32,7 @@ export interface Appointment {
   serialNumber: string;
   appByd: boolean;
   invoice: boolean;
+  campaña?: boolean;
   clientName: string;
   clientPhone: string;
   workHours: number;

@@ -37,7 +37,7 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
   SERVICIO_DIAGNOSTICO: 'Servicio + Diagnóstico',
   SERVICIO_GARANTIA:    'Servicio + Garantía',
   ALINEACION_BALANCEO:  'Alineación y Balanceo',
-  BALANCEO:             'Balanceo',
+  BALANCEO:             'Otros Servicios',
   GARANTIA_DIAGNOSTICO: 'Garantía + Diagnóstico',
   SIN_CITA:             'Sin Cita',
 };

@@ -124,6 +124,7 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
           {appt.sinCitaSubtype && <Row label="Subtipo sin cita"  value={appt.sinCitaSubtype} />}
           <BoolRow label="App BYD"  value={appt.appByd} />
           <BoolRow label="Factura"  value={appt.invoice} />
+          <BoolRow label="Campaña"  value={appt.campaña ?? false} />
           {appt.notes && (
             <div className="mt-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
               <p className="text-xs font-semibold text-gray-500 mb-1">Notas</p>

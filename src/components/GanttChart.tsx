@@ -314,6 +314,7 @@ export default function GanttChart({
             </p>
           )}
           {tooltip.appt.km != null && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
+          {tooltip.appt.campaña && <p className="text-amber-300 font-semibold">Campaña</p>}
         </div>
       )}
     </div>

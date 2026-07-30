@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const searchedAppts = (() => {
     const q = query.trim().toLowerCase();
     if (!q) return appointments;
+    if (q === 'campaña' || q === 'campana') return appointments.filter((a) => a.campaña === true);
     return appointments.filter((a) =>
       [a.clientName, a.advisor, a.tecnico, a.carModel, a.serialNumber, a.workOrder, a.startTime]
         .some((v) => v?.toLowerCase().includes(q))

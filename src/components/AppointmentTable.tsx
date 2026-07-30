@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   CARRY_OVER:          'bg-purple-100 text-purple-700 border border-purple-300',
 };
 
-type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'vin' | 'serviceType' | 'ramp' | 'status' | 'workOrder';
+type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'vin' | 'serviceType' | 'ramp' | 'status' | 'workOrder' | 'campaña';
 
 const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'date',        label: 'Fecha',            defaultWidth: 110 },
@@ -54,6 +54,7 @@ const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'serviceType', label: 'Tipo',             defaultWidth: 185 },
   { key: 'ramp',        label: 'Rampa',            defaultWidth: 85  },
   { key: 'status',      label: 'Estado',           defaultWidth: 155 },
+  { key: 'campaña',     label: 'Campaña',          defaultWidth: 85  },
 ];
 
 const ACTIONS_W = 116;
@@ -71,6 +72,7 @@ function getColValue(a: Appointment, key: ColKey): string {
     case 'ramp':        return formatRamp(a.ramp);
     case 'status':      return STATUS_LABELS[a.status] ?? a.status;
     case 'workOrder':   return a.workOrder ?? '';
+    case 'campaña':     return a.campaña ? 'Sí' : 'No';
   }
 }
 
@@ -237,6 +239,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="App BYD" value={appt.appByd} />
             <Field label="Factura" value={appt.invoice} />
+            <Field label="Campaña" value={appt.campaña} />
           </div>
         </section>
 
@@ -369,11 +372,15 @@ export default function AppointmentTable({ appointments, date, onRefresh, search
     // Global search (from prop) or internal search bar
     const q = (searchQuery !== undefined ? searchQuery : search).trim().toLowerCase();
     if (q) {
-      result = result.filter((a) =>
-        [a.clientName, a.advisor, a.tecnico, a.carModel, a.date, a.startTime, a.endTime,
-         SERVICE_LABELS[a.serviceType], STATUS_LABELS[a.status], a.workOrder, a.serialNumber]
-          .some((v) => v?.toLowerCase().includes(q)),
-      );
+      if (q === 'campaña' || q === 'campana') {
+        result = result.filter((a) => a.campaña === true);
+      } else {
+        result = result.filter((a) =>
+          [a.clientName, a.advisor, a.tecnico, a.carModel, a.date, a.startTime, a.endTime,
+           SERVICE_LABELS[a.serviceType], STATUS_LABELS[a.status], a.workOrder, a.serialNumber]
+            .some((v) => v?.toLowerCase().includes(q)),
+        );
+      }
     }
 
     // Column filters
@@ -608,6 +615,13 @@ export default function AppointmentTable({ appointments, date, onRefresh, search
                     <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap', STATUS_COLORS[appt.status])}>
                       {STATUS_LABELS[appt.status]}
                     </span>
+                  </td>
+                  {/* campaña */}
+                  <td className="px-3 py-2.5 text-center border-r border-gray-100">
+                    {appt.campaña
+                      ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">Campaña</span>
+                      : <span className="text-gray-300 text-xs">—</span>
+                    }
                   </td>
                   {/* acciones */}
                   <td className="px-2 py-2 text-center">

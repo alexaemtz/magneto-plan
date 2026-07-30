@@ -28,6 +28,7 @@ const DEFAULT: Partial<Appointment> = {
   serviceType: 'SERVICIO',
   appByd: false,
   invoice: false,
+  campaña: false,
   workHours: 1,
   status: 'PROGRAMADO',
   maintenanceLevel: 1,
@@ -200,7 +201,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
   const showMaintenance = ['SERVICIO', 'SERVICIO_DIAGNOSTICO', 'SERVICIO_GARANTIA', 'SIN_CITA'].includes(form.serviceType ?? '');
   const showWarranty = ['GARANTIA', 'SERVICIO_GARANTIA', 'GARANTIA_DIAGNOSTICO'].includes(form.serviceType ?? '') ||
     (form.serviceType === 'SIN_CITA' && form.sinCitaSubtype === 'GARANTIA');
-  const showDiagnosis = ['DIAGNOSTICO', 'SERVICIO_DIAGNOSTICO', 'GARANTIA_DIAGNOSTICO'].includes(form.serviceType ?? '') ||
+  const showDiagnosis = ['DIAGNOSTICO', 'SERVICIO_DIAGNOSTICO', 'GARANTIA_DIAGNOSTICO', 'BALANCEO'].includes(form.serviceType ?? '') ||
     (form.serviceType === 'SIN_CITA' && form.sinCitaSubtype === 'DIAGNOSTICO');
 
   return (
@@ -409,7 +410,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             </div>
           </div>
 
-          {/* App BYD & Factura */}
+          {/* App BYD, Factura & Campaña */}
           <div className="flex gap-6">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={form.appByd ?? false} onChange={(e) => set('appByd', e.target.checked)} className="w-4 h-4 rounded" />
@@ -418,6 +419,10 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={form.invoice ?? false} onChange={(e) => set('invoice', e.target.checked)} className="w-4 h-4 rounded" />
               <span className="text-sm font-medium text-gray-700">Factura</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={form.campaña ?? false} onChange={(e) => set('campaña', e.target.checked)} className="w-4 h-4 rounded" />
+              <span className="text-sm font-medium text-gray-700">Campaña</span>
             </label>
           </div>
 
