@@ -7,15 +7,16 @@ import GanttChart from '@/components/GanttChart';
 import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import AppointmentTable from '@/components/AppointmentTable';
+import TecnicoHoursTab from '@/components/TecnicoHoursTab';
 import { Appointment, Ramp } from '@/types';
 import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useSearch } from '@/context/SearchContext';
 
-type Tab = 'gantt' | 'tabla';
+type Tab = 'gantt' | 'tabla' | 'horas';
 
 export default function GanttPage() {
   const [date, setDate]                 = useState(todayISO());
@@ -191,6 +192,16 @@ export default function GanttPage() {
               <Table2 size={13} />
               Tabla
             </button>
+            <button
+              onClick={() => setActiveTab('horas')}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold transition-colors border-l border-gray-200',
+                activeTab === 'horas' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50',
+              )}
+            >
+              <Clock size={13} />
+              Horas por Técnico
+            </button>
           </div>
         </div>
 
@@ -210,7 +221,7 @@ export default function GanttPage() {
               onMove={perms.update ? handleMove : undefined}
             />
           )
-        ) : (
+        ) : activeTab === 'tabla' ? (
           loading ? (
             <div className="h-64 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -221,6 +232,14 @@ export default function GanttPage() {
               date={date}
               onRefresh={() => {}}
             />
+          )
+        ) : (
+          loading ? (
+            <div className="h-64 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <TecnicoHoursTab appointments={searchedAppts} />
           )
         )}
       </div>
