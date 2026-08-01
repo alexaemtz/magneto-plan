@@ -7,10 +7,6 @@ function b64url(s: string): string {
   return atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad);
 }
 
-/**
- * Verify JWT claims without signature (no Admin SDK needed in Edge).
- * Real data security is enforced by Firestore Security Rules.
- */
 function isValidToken(token: string): boolean {
   try {
     const parts = token.split('.');

@@ -51,7 +51,7 @@ function findConflict(existing: Appointment[], form: Partial<Appointment>, editi
   return null;
 }
 
-// Returns the first gap on the same ramp/date with enough room for the service duration.
+// Next available gap on the same ramp/date
 function findNextSlot(
   existing: Appointment[],
   form: Partial<Appointment>,
@@ -134,14 +134,12 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
     const conflict = findConflict(existingAppointments, saveForm, initial?.id);
     if (conflict) {
       if (initial?.id) {
-        // Editing — keep the blocking behavior so the user decides
         toast.error(
           `Conflicto: ${formatRamp(saveForm.ramp ?? null)} ya tiene a "${conflict.clientName}" de ${conflict.startTime} a ${conflict.endTime}`,
           { duration: 5000 },
         );
         return;
       }
-      // New appointment — auto-shift to the next available slot
       const next = findNextSlot(existingAppointments, saveForm);
       if (!next) {
         toast.error(

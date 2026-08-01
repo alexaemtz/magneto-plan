@@ -17,11 +17,7 @@ interface Props {
   indicator: DailyIndicator;
   readOnly?: boolean;
   onSave?: (updated: DailyIndicator) => void;
-  /**
-   * Valores acumulados hasta este día (inclusive), calculados por el componente
-   * padre a partir de todos los indicadores del mes. Cuando se pasa, la columna
-   * "Acumulado" se muestra como solo-lectura. Si no se pasa, la columna se oculta.
-   */
+  // Si se pasa, muestra columna "Acumulado" de solo lectura
   accumulated?: AccumulatedValues | null;
 }
 

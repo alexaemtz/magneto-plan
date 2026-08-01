@@ -94,12 +94,10 @@ export default function GanttPage() {
   ) {
     try {
       if (targetType === 'wash') {
-        // Keep ramp service times unchanged; only set wash position and status
         await updateAppointment(appt.id!, { status: 'LAVADO', lavadoStartTime: targetTime }, date);
       } else if (targetType === 'no_show') {
         await updateAppointment(appt.id!, { status: 'NO_SHOW', ramp: null }, date);
       } else {
-        // Moving to a ramp or SIN RAMPA — preserve original service duration
         const duration = Math.max(timeToMinutes(appt.endTime) - timeToMinutes(appt.startTime), 30);
         const newEnd   = minutesToTime(timeToMinutes(targetTime) + duration);
         const wasSpecial = appt.status === 'LAVADO' || appt.status === 'NO_SHOW';

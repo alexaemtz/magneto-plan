@@ -1,11 +1,4 @@
-/**
- * Seed script — inserta modelos de auto y asesores en Firestore.
- * Uso:
- *   node --env-file=.env.local scripts/seed.mjs
- *
- * Requiere las variables NEXT_PUBLIC_FIREBASE_* en .env.local
- * y las credenciales SEED_EMAIL / SEED_PASSWORD (o las pide interactivo).
- */
+// Seed script — inserta modelos de auto y asesores en Firestore.
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';

@@ -1,8 +1,5 @@
 'use client';
 
-// TEMPORALMENTE DESHABILITADO — redirige al dashboard hasta que el módulo
-// esté listo para producción. Para rehabilitar: elimina el bloque de redirect
-// y restaura el import useEffect normal.
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
@@ -34,11 +31,7 @@ function makeEmpty(date: string): DailyIndicator {
   };
 }
 
-/**
- * Calcula los valores acumulados (running sum) para cada día del mes.
- * Los indicadores deben estar ordenados por fecha ascendente.
- * El acumulado del día N = suma de "hoy" de los días 1…N (inclusive).
- */
+// Running sum por día, requiere indicadores ordenados ascendente
 function computeRunningTotals(indicators: DailyIndicator[]): AccumulatedValues[] {
   const running: Record<string, number> = {};
   let runningTotalDia = 0;
