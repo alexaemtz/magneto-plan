@@ -40,7 +40,7 @@ function SearchBar() {
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, active, loading } = useAuth();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -58,8 +58,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/login');
-  }, [user, loading, router]);
+    if (!loading && (!user || active === false)) router.replace('/login');
+  }, [user, active, loading, router]);
 
   if (loading) {
     return (
@@ -72,7 +72,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) return null;
+  if (!user || active === false) return null;
 
   return (
     <div className="flex min-h-screen">

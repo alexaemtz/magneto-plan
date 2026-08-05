@@ -19,6 +19,7 @@ const DEFAULT_COLOR = '#2563EB';
 interface AuthContextType {
   user: User | null;
   role: Role | null;
+  active: boolean | null;
   isAdmin: boolean;
   permissions: Record<PageKey, PagePermissions> | null;
   displayName: string;
@@ -35,6 +36,7 @@ const googleProvider = new GoogleAuthProvider();
 
 interface CacheEntry {
   role: Role;
+  active: boolean;
   permissions: Record<PageKey, PagePermissions>;
   displayName: string;
   avatarColor: string;
@@ -54,21 +56,24 @@ async function syncUserDoc(u: User): Promise<Omit<CacheEntry, 'ts'>> {
   const ref = doc(db, 'users', u.uid);
   const snap = await getDoc(ref);
   let role: Role;
+  let active: boolean;
   let permissions: Record<PageKey, PagePermissions>;
   let displayName: string;
   let avatarColor: string;
 
   if (!snap.exists()) {
+    // Cuenta nueva: queda inactiva hasta que un admin la apruebe manualmente.
     permissions  = { ...DEFAULT_PAGE_PERMISSIONS };
     displayName  = u.displayName ?? '';
     avatarColor  = DEFAULT_COLOR;
+    active       = false;
     await setDoc(ref, {
       uid: u.uid,
       email: u.email,
       displayName,
       avatarColor,
       role: 'user' as Role,
-      active: true,
+      active,
       permissions,
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
@@ -78,14 +83,15 @@ async function syncUserDoc(u: User): Promise<Omit<CacheEntry, 'ts'>> {
     await setDoc(ref, { lastLoginAt: serverTimestamp() }, { merge: true });
     const data = snap.data();
     role        = (data.role as Role) ?? 'user';
+    active      = (data.active as boolean) ?? false;
     permissions = (data.permissions as Record<PageKey, PagePermissions>) ?? { ...DEFAULT_PAGE_PERMISSIONS };
     displayName = (data.displayName as string) ?? u.displayName ?? '';
     avatarColor = (data.avatarColor as string) ?? DEFAULT_COLOR;
   }
 
-  const entry = { role, permissions, displayName, avatarColor, ts: Date.now() };
+  const entry = { role, active, permissions, displayName, avatarColor, ts: Date.now() };
   syncCache.set(u.uid, entry);
-  return { role, permissions, displayName, avatarColor };
+  return { role, active, permissions, displayName, avatarColor };
 }
 
 async function persistSession(idToken: string) {
@@ -103,6 +109,7 @@ async function clearSession() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]           = useState<User | null>(null);
   const [role, setRole]           = useState<Role | null>(null);
+  const [active, setActive]       = useState<boolean | null>(null);
   const [permissions, setPerms]   = useState<Record<PageKey, PagePermissions> | null>(null);
   const [displayName, setName]    = useState('');
   const [avatarColor, setColor]   = useState(DEFAULT_COLOR);
@@ -119,25 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         let role: Role = 'user';
+        let isActive = false; // fail-closed si no se puede confirmar el estado
         let perms: Record<PageKey, PagePermissions> = { ...DEFAULT_PAGE_PERMISSIONS };
         let name = '';
         let color = DEFAULT_COLOR;
         try {
           const result = await syncUserDoc(u);
-          role  = result.role;
-          perms = result.permissions;
-          name  = result.displayName;
-          color = result.avatarColor;
+          role     = result.role;
+          isActive = result.active;
+          perms    = result.permissions;
+          name     = result.displayName;
+          color    = result.avatarColor;
         } catch (err) {
           console.warn('Error sincronizando perfil en Firestore:', err);
         }
 
         setRole(role);
+        setActive(isActive);
         setPerms(perms);
         setName(name);
         setColor(color);
       } else {
         setRole(null);
+        setActive(null);
         setPerms(null);
         setName('');
         setColor(DEFAULT_COLOR);
@@ -156,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await syncUserDoc(u);
       setRole(result.role);
+      setActive(result.active);
       setPerms(result.permissions);
       setName(result.displayName);
       setColor(result.avatarColor);
@@ -180,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, role, isAdmin: role === 'admin',
+      user, role, active, isAdmin: role === 'admin',
       permissions, displayName, avatarColor,
       loading, signIn, signInWithGoogle, signOut, refreshProfile,
     }}>

@@ -7,7 +7,7 @@ import { Wrench } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const { signIn, signInWithGoogle, user } = useAuth();
+  const { signIn, signInWithGoogle, signOut, user, active, loading: authLoading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,8 +15,30 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (user) router.replace('/');
-  }, [user, router]);
+    if (!authLoading && user && active) router.replace('/');
+  }, [user, active, authLoading, router]);
+
+  if (user && !authLoading && active === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a1a2e] px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <Wrench size={26} className="text-amber-600" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">Cuenta pendiente de aprobación</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Tu cuenta ({user.email}) ya fue creada, pero un administrador debe activarla antes de que puedas acceder a Magneto Plan.
+          </p>
+          <button
+            onClick={() => signOut()}
+            className="w-full py-2.5 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

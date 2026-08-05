@@ -1,37 +1,24 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
-/** base64url → UTF-8 string (Edge-runtime safe, no Buffer) */
-function b64url(s: string): string {
-  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
-  return atob(s.replace(/-/g, '+').replace(/_/g, '/') + pad);
-}
+const adminApp = getApps()[0] ?? initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
 
-function isValidToken(token: string): boolean {
+async function isValidToken(token: string): Promise<boolean> {
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return false;
-
-    const payload = JSON.parse(b64url(parts[1]));
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const now = Math.floor(Date.now() / 1000);
-
-    return (
-      payload.aud === projectId &&
-      payload.iss === `https://securetoken.google.com/${projectId}` &&
-      typeof payload.exp === 'number' &&
-      payload.exp > now
-    );
+    await getAuth(adminApp).verifyIdToken(token);
+    return true;
   } catch {
     return false;
   }
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname.startsWith('/login');
   const rawToken = request.cookies.get('fb-auth-token')?.value;
-  const authenticated = !!rawToken && isValidToken(rawToken);
+  const authenticated = !!rawToken && (await isValidToken(rawToken));
 
   if (!isAuthPage && !authenticated) {
     const url = request.nextUrl.clone();

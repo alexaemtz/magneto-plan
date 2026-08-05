@@ -28,6 +28,10 @@ service cloud.firestore {
       return get(selfPath()).data.permissions;
     }
 
+    function canRead(page) {
+      return isAdmin() || userPerms()[page].read == true;
+    }
+
     function canCreate(page) {
       return isAdmin() || userPerms()[page].create == true;
     }
@@ -79,7 +83,7 @@ service cloud.firestore {
 
     // ── Citas ────────────────────────────────────────────────────────────────
     match /appointments/{docId} {
-      allow read:   if isActive();
+      allow read:   if isActive() && (canRead('gantt') || canRead('dashboard'));
       allow create: if isActive() && (canCreate('gantt') || canCreate('dashboard'));
       allow update: if isActive() && (canUpdate('gantt') || canUpdate('dashboard'));
       allow delete: if isActive() && (canDelete('gantt') || canDelete('dashboard'));
@@ -87,13 +91,13 @@ service cloud.firestore {
 
     // ── Indicadores diarios ───────────────────────────────────────────────────
     match /dailyIndicators/{docId} {
-      allow read:   if isActive();
+      allow read:   if isActive() && canRead('indicador');
       allow write:  if isActive() && canUpdate('indicador');
     }
 
     // ── Casos pendientes ──────────────────────────────────────────────────────
     match /pendingCases/{docId} {
-      allow read:   if isActive();
+      allow read:   if isActive() && canRead('casosPendientes');
       allow create: if isActive() && canCreate('casosPendientes');
       allow update: if isActive() && canUpdate('casosPendientes');
       allow delete: if isActive() && canDelete('casosPendientes');
@@ -101,7 +105,7 @@ service cloud.firestore {
 
     // ── Refacciones ───────────────────────────────────────────────────────────
     match /refacciones/{docId} {
-      allow read:   if isActive();
+      allow read:   if isActive() && canRead('refacciones');
       allow create: if isActive() && canCreate('refacciones');
       allow update: if isActive() && canUpdate('refacciones');
       allow delete: if isActive() && canDelete('refacciones');
