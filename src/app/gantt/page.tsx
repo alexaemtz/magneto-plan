@@ -8,8 +8,12 @@ import AppointmentForm from '@/components/AppointmentForm';
 import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import AppointmentTable from '@/components/AppointmentTable';
 import TecnicoHoursTab from '@/components/TecnicoHoursTab';
-import { Appointment, Ramp } from '@/types';
+import RampBlockForm from '@/components/RampBlockForm';
+import RampBlockDetailDialog from '@/components/RampBlockDetailDialog';
+import RampBlocksSummary from '@/components/RampBlocksSummary';
+import { Appointment, Ramp, RampBlock } from '@/types';
 import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
+import { subscribeToRampBlocks, deleteRampBlock } from '@/lib/firestore/rampBlocks';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,6 +33,11 @@ export default function GanttPage() {
   const [selectedRamp, setSelectedRamp] = useState<Ramp | null>(null);
   const [selectedTime, setSelectedTime] = useState('08:00');
   const [activeTab, setActiveTab]       = useState<Tab>('gantt');
+  const [rampBlocks, setRampBlocks]     = useState<RampBlock[]>([]);
+  const [showBlockForm, setShowBlockForm] = useState(false);
+  const [blockRamp, setBlockRamp]       = useState<Ramp | null>(null);
+  const [blockTime, setBlockTime]       = useState('08:00');
+  const [detailBlock, setDetailBlock]   = useState<RampBlock | null>(null);
   const perms                           = usePermissions('gantt');
   const { query }                       = useSearch();
 
@@ -50,6 +59,11 @@ export default function GanttPage() {
     });
     return unsub;
   }, [date]);
+
+  useEffect(() => {
+    const unsub = subscribeToRampBlocks(setRampBlocks);
+    return unsub;
+  }, []);
 
   function shiftDay(n: number) {
     const d = new Date(date + 'T12:00:00');
@@ -84,6 +98,19 @@ export default function GanttPage() {
     if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
     await deleteAppointment(appt.id!, date);
     toast.success('Cita eliminada');
+  }
+
+  function handleDisableRamp(ramp: Ramp | null, time: string) {
+    if (ramp == null) return;
+    setBlockRamp(ramp);
+    setBlockTime(time);
+    setShowBlockForm(true);
+  }
+
+  async function handleReactivateRamp(block: RampBlock) {
+    if (!confirm(`¿Reactivar Rampa ${block.ramp}?`)) return;
+    await deleteRampBlock(block.id!);
+    toast.success('Rampa reactivada');
   }
 
   async function handleMove(
@@ -126,6 +153,8 @@ export default function GanttPage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <RampBlocksSummary blocks={rampBlocks} onReactivate={handleReactivateRamp} />
+
             <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-1">
               <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                 <ChevronLeft size={18} className="text-gray-600" />
@@ -213,10 +242,13 @@ export default function GanttPage() {
             <GanttChart
               appointments={searchedAppts}
               date={date}
+              rampBlocks={rampBlocks}
               onSlotClick={perms.create ? handleSlotClick : undefined}
               onSelect={handleSelectAppt}
               onDelete={perms.delete ? handleDelete : undefined}
               onMove={perms.update ? handleMove : undefined}
+              onDisableRamp={perms.create ? handleDisableRamp : undefined}
+              onSelectRampBlock={setDetailBlock}
             />
           )
         ) : activeTab === 'tabla' ? (
@@ -260,6 +292,24 @@ export default function GanttPage() {
           existingAppointments={appointments}
           onClose={() => setShowForm(false)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {showBlockForm && blockRamp != null && (
+        <RampBlockForm
+          ramp={blockRamp}
+          date={date}
+          startTime={blockTime}
+          onClose={() => setShowBlockForm(false)}
+          onSaved={() => { setShowBlockForm(false); toast.success('Rampa inhabilitada'); }}
+        />
+      )}
+
+      {detailBlock && (
+        <RampBlockDetailDialog
+          block={detailBlock}
+          onClose={() => setDetailBlock(null)}
+          onReactivate={handleReactivateRamp}
         />
       )}
     </AppShell>

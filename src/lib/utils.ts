@@ -1,4 +1,4 @@
-import { ServiceType, Ramp } from '@/types';
+import { ServiceType, Ramp, RampBlock } from '@/types';
 
 export function generateTimeSlots(from = '07:00', to = '19:00', stepMin = 30): string[] {
   const slots: string[] = [];
@@ -65,6 +65,15 @@ export const SERVICE_COLORS_LIGHT: Record<ServiceType, string> = {
   GARANTIA_DIAGNOSTICO: 'bg-violet-50 border-violet-300 text-violet-700',
   SIN_CITA:             'bg-rose-50 border-rose-300 text-rose-700',
 };
+
+/** Rango horario (HH:MM–HH:MM) que un bloqueo de rampa cubre en una fecha dada, o null si esa fecha no cae dentro del bloqueo. */
+export function rampBlockRangeForDate(block: RampBlock, date: string): { startTime: string; endTime: string } | null {
+  if (date < block.startDate) return null;
+  if (block.endDate && date > block.endDate) return null;
+  const startTime = date === block.startDate ? block.startTime : '07:00';
+  const endTime = block.endDate && date === block.endDate ? (block.endTime ?? '21:00') : '21:00';
+  return { startTime, endTime };
+}
 
 export function formatRamp(ramp: Ramp | null): string {
   if (ramp === null) return 'Sin rampa';

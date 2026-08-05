@@ -110,5 +110,13 @@ service cloud.firestore {
       allow update: if isActive() && canUpdate('refacciones');
       allow delete: if isActive() && canDelete('refacciones');
     }
+
+    // ── Rampas inhabilitadas ────────────────────────────────────────────────────
+    match /rampBlocks/{docId} {
+      allow read:   if isActive() && (canRead('gantt') || canRead('dashboard'));
+      allow create: if isActive() && (canCreate('gantt') || canCreate('dashboard'));
+      allow update: if isActive() && (canUpdate('gantt') || canUpdate('dashboard'));
+      allow delete: if isActive() && (canDelete('gantt') || canDelete('dashboard'));
+    }
   }
 }

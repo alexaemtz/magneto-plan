@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus, X } from 'lucide-react';
-import { Appointment, AppointmentStatus, Ramp } from '@/types';
+import { Plus, X, Ban } from 'lucide-react';
+import { Appointment, AppointmentStatus, Ramp, RampBlock } from '@/types';
 import {
   generateTimeSlots,
   timeToMinutes,
   minutesToTime,
+  rampBlockRangeForDate,
   SERVICE_COLORS_LIGHT,
   SERVICE_LABELS,
   cn,
@@ -17,10 +18,13 @@ const WASH_MIN = 45; // fixed duration for LAVADO blocks
 interface GanttChartProps {
   appointments: Appointment[];
   date: string;
+  rampBlocks?: RampBlock[];
   onSlotClick?: (ramp: Ramp | null, time: string) => void;
   onSelect?: (appt: Appointment) => void;
   onDelete?: (appt: Appointment) => void;
   onMove?: (appt: Appointment, targetRamp: Ramp | null, targetType: string, targetTime: string) => void;
+  onDisableRamp?: (ramp: Ramp, time: string) => void;
+  onSelectRampBlock?: (block: RampBlock) => void;
 }
 
 const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
@@ -52,16 +56,20 @@ const ROW_HEIGHT = 56; // px
 
 export default function GanttChart({
   appointments,
-  date: _date,
+  date,
+  rampBlocks = [],
   onSlotClick,
   onSelect,
   onDelete,
   onMove,
+  onDisableRamp,
+  onSelectRampBlock,
 }: GanttChartProps) {
   const [tooltip, setTooltip]     = useState<{ appt: Appointment; x: number; y: number } | null>(null);
   const [dragAppt, setDragAppt]   = useState<Appointment | null>(null);
   const [dragOver, setDragOver]   = useState<{ rowLabel: string; slotTime: string } | null>(null);
   const [hoveredCell, setHovered] = useState<string | null>(null);
+  const [menuCell, setMenuCell]   = useState<{ ramp: Ramp; time: string; x: number; y: number } | null>(null);
 
   const slots = useMemo(() => generateTimeSlots('07:00', '21:00', 30), []);
 
@@ -112,6 +120,17 @@ export default function GanttChart({
     return Math.max(1, Math.ceil(diff / 30));
   }
 
+  // Active rampBlock (if any) covering this ramp row on the displayed date
+  function getBlockedRange(row: { ramp: Ramp | null; type: string }): { block: RampBlock; startTime: string; endTime: string } | null {
+    if (row.type !== 'ramp' || row.ramp == null) return null;
+    for (const b of rampBlocks) {
+      if (b.ramp !== row.ramp) continue;
+      const range = rampBlockRangeForDate(b, date);
+      if (range) return { block: b, ...range };
+    }
+    return null;
+  }
+
   const rendered    = new Set<string>();
   const totalWidth  = slots.length * SLOT_WIDTH + 112;
 
@@ -151,6 +170,7 @@ export default function GanttChart({
         {/* Rows */}
         {RAMPS.map((row) => {
           rendered.clear();
+          const blockedRange = getBlockedRange(row);
           return (
             <div
               key={row.label}
@@ -243,6 +263,34 @@ export default function GanttChart({
                     );
                   }
 
+                  // Rampa inhabilitada — cubre este slot y no hay cita ya agendada aquí
+                  const isBlocked = blockedRange
+                    && timeToMinutes(t) >= timeToMinutes(blockedRange.startTime)
+                    && timeToMinutes(t) < timeToMinutes(blockedRange.endTime);
+
+                  if (isBlocked) {
+                    const isFirst = t === blockedRange!.startTime;
+                    return (
+                      <div
+                        key={t}
+                        style={{
+                          width: SLOT_WIDTH,
+                          minWidth: SLOT_WIDTH,
+                          backgroundImage: 'repeating-linear-gradient(45deg, #e5e7eb, #e5e7eb 6px, #d1d5db 6px, #d1d5db 12px)',
+                        }}
+                        className="shrink-0 border-r border-gray-200 flex items-center justify-center cursor-pointer hover:brightness-95 transition-all"
+                        onClick={() => onSelectRampBlock?.(blockedRange!.block)}
+                        title="Rampa inhabilitada"
+                      >
+                        {isFirst && (
+                          <span className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 bg-white/85 px-1.5 py-0.5 rounded whitespace-nowrap">
+                            <Ban size={10} /> Inhabilitada
+                          </span>
+                        )}
+                      </div>
+                    );
+                  }
+
                   // Empty cell
                   const cellKey     = `${row.label}:${t}`;
                   const isDragTarget = dragOver?.rowLabel === row.label && dragOver?.slotTime === t;
@@ -259,7 +307,14 @@ export default function GanttChart({
                           : 'border-gray-100 hover:bg-blue-50/50',
                         onSlotClick && !dragAppt ? 'cursor-pointer' : '',
                       )}
-                      onClick={() => { if (!dragAppt) onSlotClick?.(row.ramp, t); }}
+                      onClick={(e) => {
+                        if (dragAppt) return;
+                        if (row.type === 'ramp' && row.ramp != null && onDisableRamp) {
+                          setMenuCell({ ramp: row.ramp, time: t, x: e.clientX, y: e.clientY });
+                        } else {
+                          onSlotClick?.(row.ramp, t);
+                        }
+                      }}
                       onMouseEnter={() => { if (!dragAppt) setHovered(cellKey); }}
                       onMouseLeave={() => setHovered(null)}
                       onDragOver={(e) => {
@@ -315,6 +370,30 @@ export default function GanttChart({
           )}
           {tooltip.appt.km != null && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
           {tooltip.appt.campaña && <p className="text-amber-300 font-semibold">Campaña</p>}
+        </div>
+      )}
+
+      {/* "+" menu: nueva cita vs. inhabilitar rampa */}
+      {menuCell && (
+        <div className="fixed inset-0 z-40" onClick={() => setMenuCell(null)}>
+          <div
+            className="absolute bg-white rounded-xl shadow-2xl border border-gray-200 py-1 w-48"
+            style={{ left: menuCell.x, top: menuCell.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+              onClick={() => { onSlotClick?.(menuCell.ramp, menuCell.time); setMenuCell(null); }}
+            >
+              <Plus size={14} className="text-blue-600" /> Nueva cita
+            </button>
+            <button
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+              onClick={() => { onDisableRamp?.(menuCell.ramp, menuCell.time); setMenuCell(null); }}
+            >
+              <Ban size={14} className="text-red-500" /> Inhabilitar rampa
+            </button>
+          </div>
         </div>
       )}
     </div>

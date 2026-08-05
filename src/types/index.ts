@@ -55,6 +55,19 @@ export interface Appointment {
   updatedAt?: string;
 }
 
+export interface RampBlock {
+  id?: string;
+  ramp: Ramp;
+  startDate: string;        // YYYY-MM-DD
+  startTime: string;        // HH:MM
+  endDate?: string | null;  // YYYY-MM-DD — sin valor = indefinido
+  endTime?: string | null;  // HH:MM — solo aplica si endDate está definido
+  carModel?: string;
+  notes: string;
+  createdBy?: string;
+  createdAt?: string;
+}
+
 export interface DailyIndicatorRow {
   hoy: number;
   realizado: number;
