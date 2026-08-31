@@ -1,2 +1,3 @@
 allowBuilds:
   '@firebase/util protobufjs sharp unrs-resolver': true
+  re2: true

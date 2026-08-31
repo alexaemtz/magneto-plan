@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import DailyIndicatorTable, { AccumulatedValues } from '@/components/DailyIndicator';
@@ -58,7 +58,6 @@ export default function IndicadorPage() {
   useEffect(() => { router.replace('/'); }, [router]);
   return null;
 
-  // eslint-disable-next-line no-unreachable
   const today = todayISO();
   const [year, setYear]   = useState(parseInt(today.split('-')[0]));
   const [month, setMonth] = useState(parseInt(today.split('-')[1]));
@@ -67,7 +66,7 @@ export default function IndicadorPage() {
   const [adding, setAdding]         = useState(false);
   const [newDate, setNewDate]       = useState(today);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getIndicatorsByMonth(year, month);
@@ -78,9 +77,9 @@ export default function IndicadorPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [year, month]);
 
-  useEffect(() => { load(); }, [year, month]);
+  useEffect(() => { load(); }, [year, month, load]);
 
   function shiftMonth(n: number) {
     let m = month + n;

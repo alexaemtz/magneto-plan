@@ -107,7 +107,7 @@ function FilterDropdown({
 
   function toggle(v: string) {
     const next = new Set(active);
-    next.has(v) ? next.delete(v) : next.add(v);
+    if (next.has(v)) next.delete(v); else next.add(v);
     onChange(next);
   }
 
@@ -308,12 +308,11 @@ function SortIcon({ col, sortCol, sortDir }: { col: ColKey; sortCol: ColKey | nu
 
 interface Props {
   appointments: Appointment[];
-  date: string;
   onRefresh: () => void;
   searchQuery?: string;
 }
 
-export default function AppointmentTable({ appointments, date, onRefresh, searchQuery }: Props) {
+export default function AppointmentTable({ appointments, onRefresh, searchQuery }: Props) {
   const perms = usePermissions('gantt');
   const [search, setSearch]                 = useState('');
   const [sortCol, setSortCol]               = useState<ColKey | null>(null);
@@ -326,7 +325,6 @@ export default function AppointmentTable({ appointments, date, onRefresh, search
   const [viewAppt, setViewAppt]             = useState<Appointment | null>(null);
   const [editAppt, setEditAppt]             = useState<Appointment | null>(null);
   const [deleteTarget, setDeleteTarget]     = useState<Appointment | null>(null);
-  const [deleting, setDeleting]             = useState(false);
 
   const resizeRef = useRef<{ col: ColKey; startX: number; startW: number } | null>(null);
 
@@ -405,7 +403,6 @@ export default function AppointmentTable({ appointments, date, onRefresh, search
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    setDeleting(true);
     try {
       await deleteAppointment(deleteTarget.id!, deleteTarget.date);
       toast.success('Cita eliminada');
@@ -414,8 +411,6 @@ export default function AppointmentTable({ appointments, date, onRefresh, search
       onRefresh();
     } catch {
       toast.error('Error al eliminar la cita');
-    } finally {
-      setDeleting(false);
     }
   }
 

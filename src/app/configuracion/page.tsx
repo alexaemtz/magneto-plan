@@ -242,7 +242,6 @@ function UsersSection({ currentUid }: { currentUid: string }) {
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    setLoading(true);
     try {
       setUsers(await getUsersList());
     } catch (err) {
@@ -253,7 +252,17 @@ function UsersSection({ currentUid }: { currentUid: string }) {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let active = true;
+    getUsersList()
+      .then((users) => { if (active) setUsers(users); })
+      .catch((err) => {
+        console.error('Error cargando usuarios:', err);
+        toast.error('Error al cargar los usuarios');
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   async function toggleRole(u: UserProfile) {
     const next = u.role === 'admin' ? 'user' : 'admin';
@@ -357,7 +366,6 @@ export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    setLoading(true);
     try {
       const [a, c, t] = await Promise.all([
         getAdvisors(),
@@ -375,7 +383,26 @@ export default function ConfiguracionPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      getAdvisors(),
+      getCarModels(),
+      getTecnicos().catch(() => [] as Tecnico[]),
+    ])
+      .then(([a, c, t]) => {
+        if (!active) return;
+        setAdvisors(a);
+        setCarModels(c);
+        setTecnicos(t);
+      })
+      .catch((err) => {
+        console.error('Error cargando catálogos:', err);
+        toast.error('Error al cargar los catálogos.');
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   // ── Advisors ──
   async function addAdvisor(name: string) {

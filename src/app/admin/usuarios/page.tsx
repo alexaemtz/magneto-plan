@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/context/AuthContext';
-import { getUsersList, updateUserProfile, setUserPagePermissions } from '@/lib/firestore/users';
+import { getUsersList, updateUserProfile } from '@/lib/firestore/users';
 import {
   UserProfile, Role, PageKey, PagePermissions,
   PAGE_LABELS, DEFAULT_PAGE_PERMISSIONS,

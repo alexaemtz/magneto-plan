@@ -49,7 +49,8 @@ const SYNC_TTL = 5 * 60_000;
 async function syncUserDoc(u: User): Promise<Omit<CacheEntry, 'ts'>> {
   const cached = syncCache.get(u.uid);
   if (cached && Date.now() - cached.ts < SYNC_TTL) {
-    const { ts: _, ...rest } = cached;
+    const { ts, ...rest } = cached;
+    void ts;
     return rest;
   }
 

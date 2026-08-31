@@ -81,7 +81,7 @@ function FilterDropdown({ col, top, left, cases, active, onClose, onChange }: {
   }, [onClose]);
   function toggle(v: string) {
     const next = new Set(active);
-    next.has(v) ? next.delete(v) : next.add(v);
+    if (next.has(v)) next.delete(v); else next.add(v);
     onChange(next);
   }
   return createPortal(
@@ -201,7 +201,6 @@ export default function CasosPendientesPage() {
   }, [cases, query, filters, sortCol, sortDir]);
 
   useEffect(() => {
-    setLoading(true);
     const unsub = subscribeToPendingCases((data) => { setCases(data); setLoading(false); });
     return unsub;
   }, []);

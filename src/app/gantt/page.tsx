@@ -52,7 +52,6 @@ export default function GanttPage() {
   })();
 
   useEffect(() => {
-    setLoading(true);
     const unsub = subscribeToAppointmentsByDate(date, (appts) => {
       setAppointments(appts);
       setLoading(false);
@@ -259,7 +258,6 @@ export default function GanttPage() {
           ) : (
             <AppointmentTable
               appointments={searchedAppts}
-              date={date}
               onRefresh={() => {}}
             />
           )

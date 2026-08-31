@@ -175,7 +175,7 @@ function FilterDropdown({
 
   function toggle(v: string) {
     const next = new Set(active);
-    next.has(v) ? next.delete(v) : next.add(v);
+    if (next.has(v)) next.delete(v); else next.add(v);
     onChange(next);
   }
 
@@ -254,18 +254,15 @@ function DonutChart({ data }: { data: { label: string; value: number; color: str
   const cx = 80, cy = 80, r = 55, sw = 28;
   const C = 2 * Math.PI * r;
 
-  let cumulative = 0;
-  const segments = data
-    .filter((d) => d.value > 0)
-    .map((d) => {
-      const fraction = d.value / total;
-      const dash = fraction * C;
-      const gap = (1 - fraction) * C;
-      const offset = (1 - cumulative) * C;
-      cumulative += fraction;
-      return { ...d, dash, gap, offset };
-    });
-
+  const visible = data.filter((d) => d.value > 0);
+  const segments = visible.map((d, i) => {
+    const fraction = d.value / total;
+    const cumulative = visible.slice(0, i).reduce((s, x) => s + x.value / total, 0);
+    const dash = fraction * C;
+    const gap = (1 - fraction) * C;
+    const offset = (1 - cumulative) * C;
+    return { ...d, dash, gap, offset };
+  });
   if (total === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-4">
@@ -728,7 +725,6 @@ export default function RefaccionesPage() {
   // ── Firestore subscription ────────────────────────────────────────────────
 
   useEffect(() => {
-    setLoading(true);
     const unsub = subscribeToPartsOrders((data) => {
       setOrders(data);
       setLastUpdated(new Date());
@@ -808,10 +804,9 @@ export default function RefaccionesPage() {
     return result;
   }, [orders, dateFrom, dateTo, statusFilter, query, colFilters, sortCol, sortDir]);
 
-  useEffect(() => { setCurrentPage(1); }, [dateFrom, dateTo, statusFilter, query, colFilters, sortCol, sortDir]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows   = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const safePage = Math.min(currentPage, totalPages);
+  const pageRows   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const activeFilterCount = Object.values(colFilters).filter((s) => s && s.size > 0).length;
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
@@ -873,7 +868,7 @@ export default function RefaccionesPage() {
   function toggleStatus(s: PartsOrderStatus) {
     setStatusFilter((prev) => {
       const next = new Set(prev);
-      next.has(s) ? next.delete(s) : next.add(s);
+      if (next.has(s)) next.delete(s); else next.add(s);
       return next;
     });
   }
@@ -1033,7 +1028,7 @@ export default function RefaccionesPage() {
               )}
               <span className="text-xs text-gray-400">
                 {filtered.length > 0
-                  ? `${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, filtered.length)} de ${filtered.length}`
+                  ? `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, filtered.length)} de ${filtered.length}`
                   : '0 registros'}
               </span>
             </div>
@@ -1047,7 +1042,7 @@ export default function RefaccionesPage() {
                   <ChevronLeft size={16} className="text-gray-600" />
                 </button>
                 <span className="text-xs font-medium text-gray-600 px-2">
-                  {currentPage} / {totalPages}
+                  {safePage} / {totalPages}
                 </span>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -1246,7 +1241,7 @@ export default function RefaccionesPage() {
                   <ChevronLeft size={16} className="text-gray-600" />
                 </button>
                 <span className="text-xs font-medium text-gray-600 px-2">
-                  {currentPage} / {totalPages}
+                  {safePage} / {totalPages}
                 </span>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}

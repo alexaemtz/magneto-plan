@@ -30,6 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# firebase emulator
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+
 # env files — ignorar todos excepto el template
 .env*
 !.env.local.example

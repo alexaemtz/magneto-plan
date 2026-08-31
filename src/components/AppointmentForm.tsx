@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Appointment, ServiceType, Ramp, AppointmentStatus, Advisor, CarModel, Tecnico } from '@/types';
-import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes, minutesToTime } from '@/lib/utils';
+import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes } from '@/lib/utils';
+import { findConflict, findNextSlot } from '@/lib/scheduling';
 import { createAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { createPendingCase } from '@/lib/firestore/pendingCases';
 import { getAdvisors, getCarModels, getTecnicos } from '@/lib/firestore/catalog';
@@ -19,7 +20,6 @@ interface Props {
   onSaved: () => void;
 }
 
-const RAMPS: (Ramp | 'none')[] = [1, 2, 3, 4, 5, 6, 'none'];
 const SERVICE_TYPES = Object.keys(SERVICE_LABELS) as ServiceType[];
 const TIME_SLOTS = generateTimeSlots('07:00', '21:00', 30);
 const MAINTENANCE_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -34,61 +34,14 @@ const DEFAULT: Partial<Appointment> = {
   maintenanceLevel: 1,
 };
 
-function sameRamp(a: Ramp | null | undefined, b: Ramp | null | undefined): boolean {
-  if (a == null && b == null) return true;
-  if (a == null || b == null) return false;
-  return Number(a) === Number(b);
-}
-
-function findConflict(existing: Appointment[], form: Partial<Appointment>, editingId?: string): Appointment | null {
-  if (!form.ramp || !form.startTime || !form.endTime || !form.date) return null;
-  for (const appt of existing) {
-    if (appt.id === editingId) continue;
-    if (appt.status === 'NO_SHOW') continue;
-    if (appt.date !== form.date || !sameRamp(appt.ramp, form.ramp)) continue;
-    if (form.startTime < appt.endTime && form.endTime > appt.startTime) return appt;
-  }
-  return null;
-}
-
-// Next available gap on the same ramp/date
-function findNextSlot(
-  existing: Appointment[],
-  form: Partial<Appointment>,
-  editingId?: string,
-): { startTime: string; endTime: string } | null {
-  if (!form.ramp || !form.startTime || !form.endTime || !form.date) return null;
-  const duration = timeToMinutes(form.endTime) - timeToMinutes(form.startTime);
-  if (duration <= 0) return null;
-
-  const rampAppts = existing
-    .filter((a) => a.id !== editingId && a.date === form.date && a.status !== 'NO_SHOW' && sameRamp(a.ramp, form.ramp))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-  let candidate = timeToMinutes(form.startTime);
-  const dayEnd  = timeToMinutes('21:00');
-
-  while (candidate + duration <= dayEnd) {
-    const candidateEnd = candidate + duration;
-    const conflict = rampAppts.find((a) => {
-      const aStart = timeToMinutes(a.startTime);
-      const aEnd   = timeToMinutes(a.endTime);
-      return candidate < aEnd && candidateEnd > aStart;
-    });
-    if (!conflict) return { startTime: minutesToTime(candidate), endTime: minutesToTime(candidateEnd) };
-    candidate = timeToMinutes(conflict.endTime);
-  }
-  return null;
-}
-
 export default function AppointmentForm({ date, initial, ramp, startTime, existingAppointments = [], onClose, onSaved }: Props) {
   const [form, setForm] = useState<Partial<Appointment>>({
     ...DEFAULT,
-    date,
     ramp: ramp ?? null,
     startTime: startTime ?? '08:00',
     endTime: '09:00',
     ...initial,
+    date: date ?? initial?.date,
   });
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [carModels, setCarModels] = useState<CarModel[]>([]);
@@ -98,7 +51,6 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setCatalogsLoading(true);
     Promise.all([
       getAdvisors(true).catch(() => [] as Advisor[]),
       getCarModels(true).catch(() => [] as CarModel[]),
@@ -133,14 +85,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
     let saveForm = { ...form };
     const conflict = findConflict(existingAppointments, saveForm, initial?.id);
     if (conflict) {
-      if (initial?.id) {
-        toast.error(
-          `Conflicto: ${formatRamp(saveForm.ramp ?? null)} ya tiene a "${conflict.clientName}" de ${conflict.startTime} a ${conflict.endTime}`,
-          { duration: 5000 },
-        );
-        return;
-      }
-      const next = findNextSlot(existingAppointments, saveForm);
+      const next = findNextSlot(existingAppointments, saveForm, initial?.id);
       if (!next) {
         toast.error(
           `Sin espacio disponible en ${formatRamp(saveForm.ramp ?? null)} para este horario.`,
@@ -208,7 +153,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">
-            {initial?.id ? 'Editar cita' : 'Nueva cita'} — {date}
+            {initial?.id ? 'Editar cita' : 'Nueva cita'} — {form.date ?? date}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
             <X size={20} className="text-gray-500" />
@@ -216,6 +161,18 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          {/* Fecha */}
+          <div>
+            <label className={labelCls}>Fecha *</label>
+            <input
+              type="date"
+              className={inputCls}
+              value={form.date ?? ''}
+              onChange={(e) => set('date', e.target.value)}
+              required
+            />
+          </div>
+
           {/* Tipo de servicio */}
           <div>
             <label className={labelCls}>Tipo de servicio *</label>

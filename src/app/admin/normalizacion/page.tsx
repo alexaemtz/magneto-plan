@@ -79,7 +79,7 @@ async function normalizeCollection(
 ): Promise<{ updated: number; skipped: number }> {
   const snap = await getDocs(collection(db, colKey));
 
-  let batches = [writeBatch(db)];
+  const batches = [writeBatch(db)];
   let opCount = 0;
   let updated = 0;
   let skipped = 0;

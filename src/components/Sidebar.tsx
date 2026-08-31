@@ -9,7 +9,6 @@ import UserProfilePanel from '@/components/UserProfilePanel';
 import {
   LayoutDashboard,
   CalendarDays,
-  BarChart2,
   ClipboardList,
   Settings,
   LogOut,
