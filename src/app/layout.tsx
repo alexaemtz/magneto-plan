@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Outfit } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { SearchProvider } from '@/context/SearchContext';
 import { Toaster } from 'react-hot-toast';
 
-const poppins = Poppins({
-  variable: '--font-poppins',
+const outfit = Outfit({
+  variable: '--font-outfit',
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
 });
 
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${poppins.variable} h-full antialiased`}>
+    <html lang="es" className={`${outfit.variable} h-full antialiased`}>
       <body className="min-h-full bg-gray-50">
         <AuthProvider>
           <SearchProvider>

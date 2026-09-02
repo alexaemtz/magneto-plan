@@ -98,9 +98,8 @@ export default function UserProfilePanel({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <p className="font-semibold text-gray-800">Mi perfil</p>
@@ -132,7 +131,7 @@ export default function UserProfilePanel({ onClose }: Props) {
                   title={c.label}
                   onClick={() => setColor(c.hex)}
                   className={cn(
-                    'w-7 h-7 rounded-full transition-transform hover:scale-110',
+                    'w-7 h-7 rounded-full transition-transform duration-150 ease-out active:scale-95 [@media(hover:hover)]:hover:scale-110',
                     color === c.hex && 'ring-2 ring-offset-2 ring-gray-400 scale-110',
                   )}
                   style={{ backgroundColor: c.hex }}

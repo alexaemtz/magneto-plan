@@ -59,8 +59,8 @@ export default function RampBlockForm({ ramp, date, startTime, onClose, onSaved 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             <Ban size={18} className="text-red-500" />
@@ -109,7 +109,7 @@ export default function RampBlockForm({ ramp, date, startTime, onClose, onSaved 
             <label className={labelCls}>Modelo del auto (opcional)</label>
             {carModels.length > 0 ? (
               <select className={inputCls} value={carModel} onChange={(e) => setCarModel(e.target.value)}>
-                <option value="">— Ninguno —</option>
+                <option value="">Ninguno</option>
                 {carModels.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
               </select>
             ) : (

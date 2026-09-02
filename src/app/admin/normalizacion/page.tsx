@@ -14,6 +14,7 @@ import {
 import { normalizeName } from '@/lib/utils';
 import { Play, CheckCircle2, Loader2, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { PageHeader, Card } from '@/components/ui/primitives';
 
 // ── Collection normalization configs ─────────────────────────────────────────
 
@@ -167,23 +168,20 @@ export default function NormalizacionPage() {
 
   return (
     <AppShell>
-      <div className="px-6 py-6 space-y-6 max-w-3xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Normalización de datos</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Aplica formato de nombre propio y mayúsculas a los registros existentes en Firestore.
-            Cada operación es incremental — solo actualiza los documentos que cambien.
-          </p>
-        </div>
+      <div className="px-6 py-7 space-y-6 max-w-3xl mx-auto">
+        <PageHeader
+          title="Normalización de datos"
+          description="Aplica formato de nombre propio y mayúsculas a los registros existentes en Firestore. Cada operación es incremental: solo actualiza los documentos que cambien."
+        />
 
         {/* Cards per collection */}
         <div className="space-y-3">
           {COLLECTIONS.map((col) => {
             const s = states[col.key];
             return (
-              <div
+              <Card
                 key={col.key}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 flex items-start gap-4"
+                className="px-5 py-4 flex items-start gap-4"
               >
                 <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
                   <Database size={17} className="text-gray-500" />
@@ -219,7 +217,7 @@ export default function NormalizacionPage() {
                   )}
                   {s.status === 'running' ? 'Procesando…' : s.status === 'done' ? 'Repetir' : 'Ejecutar'}
                 </button>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -229,7 +227,7 @@ export default function NormalizacionPage() {
           <button
             onClick={runAll}
             disabled={anyRunning || runningAll}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-md shadow-blue-200"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-lg shadow-blue-600/20"
           >
             {runningAll ? (
               <Loader2 size={15} className="animate-spin" />

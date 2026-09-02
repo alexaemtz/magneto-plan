@@ -11,22 +11,24 @@ import TecnicoHoursTab from '@/components/TecnicoHoursTab';
 import RampBlockForm from '@/components/RampBlockForm';
 import RampBlockDetailDialog from '@/components/RampBlockDetailDialog';
 import RampBlocksSummary from '@/components/RampBlocksSummary';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Appointment, Ramp, RampBlock } from '@/types';
-import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
+import { deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { subscribeToRampBlocks, deleteRampBlock } from '@/lib/firestore/rampBlocks';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
+import { useDateAppointments } from '@/hooks/useDateAppointments';
 import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useSearch } from '@/context/SearchContext';
+import { PageHeader, Skeleton } from '@/components/ui/primitives';
 
 type Tab = 'gantt' | 'tabla' | 'horas';
 
 export default function GanttPage() {
   const [date, setDate]                 = useState(todayISO());
   const dateInputRef                    = useRef<HTMLInputElement>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading]           = useState(true);
+  const { appointments, loading } = useDateAppointments(date);
   const [showForm, setShowForm]         = useState(false);
   const [editAppt, setEditAppt]         = useState<Appointment | undefined>();
   const [detailAppt, setDetailAppt]     = useState<Appointment | null>(null);
@@ -38,6 +40,8 @@ export default function GanttPage() {
   const [blockRamp, setBlockRamp]       = useState<Ramp | null>(null);
   const [blockTime, setBlockTime]       = useState('08:00');
   const [detailBlock, setDetailBlock]   = useState<RampBlock | null>(null);
+  const [confirmDelete, setConfirmDelete]     = useState<Appointment | null>(null);
+  const [confirmReactivate, setConfirmReactivate] = useState<RampBlock | null>(null);
   const perms                           = usePermissions('gantt');
   const { query }                       = useSearch();
 
@@ -50,14 +54,6 @@ export default function GanttPage() {
         .some((v) => v?.toLowerCase().includes(q))
     );
   })();
-
-  useEffect(() => {
-    const unsub = subscribeToAppointmentsByDate(date, (appts) => {
-      setAppointments(appts);
-      setLoading(false);
-    });
-    return unsub;
-  }, [date]);
 
   useEffect(() => {
     const unsub = subscribeToRampBlocks(setRampBlocks);
@@ -93,8 +89,12 @@ export default function GanttPage() {
     toast.success(editAppt ? 'Cita actualizada' : 'Cita creada');
   }
 
-  async function handleDelete(appt: Appointment) {
-    if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
+  function handleDelete(appt: Appointment) {
+    setConfirmDelete(appt);
+  }
+
+  async function handleDeleteConfirmed(appt: Appointment) {
+    setConfirmDelete(null);
     await deleteAppointment(appt.id!, date);
     toast.success('Cita eliminada');
   }
@@ -106,8 +106,8 @@ export default function GanttPage() {
     setShowBlockForm(true);
   }
 
-  async function handleReactivateRamp(block: RampBlock) {
-    if (!confirm(`¿Reactivar Rampa ${block.ramp}?`)) return;
+  async function handleReactivateConfirmed(block: RampBlock) {
+    setConfirmReactivate(null);
     await deleteRampBlock(block.id!);
     toast.success('Rampa reactivada');
   }
@@ -142,67 +142,63 @@ export default function GanttPage() {
 
   return (
     <AppShell>
-      <div className="px-6 py-6 space-y-4 max-w-screen-2xl mx-auto">
+      <div className="px-6 py-7 space-y-4 max-w-screen-2xl mx-auto">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Magneto Plan</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Citas del día</p>
-          </div>
+        <PageHeader
+          title="Magneto Plan"
+          description="Citas del día"
+        >
+          <RampBlocksSummary blocks={rampBlocks} onReactivate={(b) => setConfirmReactivate(b)} />
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <RampBlocksSummary blocks={rampBlocks} onReactivate={handleReactivateRamp} />
-
-            <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-1">
-              <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <ChevronLeft size={18} className="text-gray-600" />
-              </button>
-              <div
-                className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={() => dateInputRef.current?.showPicker()}
-              >
-                <Calendar size={14} className="text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 select-none">
-                  {isoToDisplay(date)}
-                </span>
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
-              <button onClick={() => shiftDay(1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <ChevronRight size={18} className="text-gray-600" />
-              </button>
+          <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-1.5 py-1.5">
+            <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Día anterior">
+              <ChevronLeft size={18} />
+            </button>
+            <div
+              className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => dateInputRef.current?.showPicker()}
+            >
+              <Calendar size={14} className="text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 select-none tabular">
+                {isoToDisplay(date)}
+              </span>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="sr-only"
+              />
             </div>
-
-            {perms.create && (
-              <button
-                onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
-              >
-                <Plus size={16} />
-                Nueva cita
-              </button>
-            )}
+            <button onClick={() => shiftDay(1)} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Día siguiente">
+              <ChevronRight size={18} />
+            </button>
           </div>
-        </div>
+
+          {perms.create && (
+            <button
+              onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
+            >
+              <Plus size={16} />
+              Nueva cita
+            </button>
+          )}
+        </PageHeader>
 
         {/* ── Tabs + subtitle ── */}
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-gray-600 font-medium">
-            {formatDate(date)} — {searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''} cita{searchedAppts.length !== 1 ? 's' : ''}
+          <p className="text-sm text-gray-500 font-medium tabular">
+            {formatDate(date)} · {searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''} cita{searchedAppts.length !== 1 ? 's' : ''}
           </p>
 
-          <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+          <div className="flex rounded-xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)] p-1">
             <button
               onClick={() => setActiveTab('gantt')}
               className={cn(
-                'flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold transition-colors',
-                activeTab === 'gantt' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50',
+                'flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+                activeTab === 'gantt' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
               )}
             >
               <LayoutGrid size={13} />
@@ -211,8 +207,8 @@ export default function GanttPage() {
             <button
               onClick={() => setActiveTab('tabla')}
               className={cn(
-                'flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold transition-colors border-l border-gray-200',
-                activeTab === 'tabla' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50',
+                'flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+                activeTab === 'tabla' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
               )}
             >
               <Table2 size={13} />
@@ -221,8 +217,8 @@ export default function GanttPage() {
             <button
               onClick={() => setActiveTab('horas')}
               className={cn(
-                'flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold transition-colors border-l border-gray-200',
-                activeTab === 'horas' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50',
+                'flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+                activeTab === 'horas' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
               )}
             >
               <Clock size={13} />
@@ -234,9 +230,7 @@ export default function GanttPage() {
         {/* ── Content ── */}
         {activeTab === 'gantt' ? (
           loading ? (
-            <div className="h-64 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <Skeleton className="h-[440px] w-full rounded-2xl" />
           ) : (
             <GanttChart
               appointments={searchedAppts}
@@ -252,8 +246,8 @@ export default function GanttPage() {
           )
         ) : activeTab === 'tabla' ? (
           loading ? (
-            <div className="h-64 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center py-16">
+              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <AppointmentTable
@@ -263,8 +257,8 @@ export default function GanttPage() {
           )
         ) : (
           loading ? (
-            <div className="h-64 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center py-16">
+              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <TecnicoHoursTab appointments={searchedAppts} />
@@ -307,7 +301,27 @@ export default function GanttPage() {
         <RampBlockDetailDialog
           block={detailBlock}
           onClose={() => setDetailBlock(null)}
-          onReactivate={handleReactivateRamp}
+          onReactivate={(b) => setConfirmReactivate(b)}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="¿Eliminar cita?"
+          message={`${confirmDelete.clientName} · ${confirmDelete.carModel}`}
+          detail={`${isoToDisplay(confirmDelete.date)} · ${confirmDelete.startTime}`}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => handleDeleteConfirmed(confirmDelete)}
+        />
+      )}
+
+      {confirmReactivate && (
+        <ConfirmDialog
+          title="Reactivar rampa"
+          message={`¿Reactivar Rampa ${confirmReactivate.ramp}?`}
+          confirmLabel="Reactivar"
+          onCancel={() => setConfirmReactivate(null)}
+          onConfirm={() => handleReactivateConfirmed(confirmReactivate)}
         />
       )}
     </AppShell>

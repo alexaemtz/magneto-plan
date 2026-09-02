@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ShieldCheck, User, X, Save, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { PageHeader, TableSkeleton } from '@/components/ui/primitives';
 
 const PAGES: PageKey[] = ['dashboard', 'gantt', 'casosPendientes', 'refacciones'];
 const PERM_LABELS: Record<keyof PagePermissions, string> = {
@@ -55,12 +56,12 @@ function EditModal({ user, onClose, onSaved }: EditModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/60">
           <div>
-            <p className="font-semibold text-gray-800">{user.displayName || '—'}</p>
+            <p className="font-semibold text-gray-800">{user.displayName || 'Sin nombre'}</p>
             <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors">
@@ -207,26 +208,24 @@ export default function AdminUsuariosPage() {
 
   return (
     <AppShell>
-      <div className="px-6 py-6 space-y-5 max-w-screen-lg mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Usuarios</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Gestión de accesos y permisos</p>
-        </div>
+      <div className="px-6 py-7 space-y-5 max-w-screen-lg mx-auto">
+        <PageHeader
+          title="Usuarios"
+          description="Gestión de accesos y permisos"
+        />
 
         {loading ? (
-          <div className="h-48 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
-            <Loader2 size={24} className="animate-spin text-blue-500" />
-          </div>
+          <TableSkeleton rows={6} cols={5} />
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600">Usuario</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Rol</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Estado</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Permisos</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">Acción</th>
+                <tr className="bg-gray-50/70 border-b border-gray-200">
+                  <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Usuario</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Rol</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Estado</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Permisos</th>
+                  <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wide text-gray-500">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -242,11 +241,11 @@ export default function AdminUsuariosPage() {
                           {u.role === 'admin' ? <ShieldCheck size={14} /> : <User size={14} />}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800 leading-tight">{u.displayName || '—'}</p>
+                          <p className="font-medium text-gray-800 leading-tight">{u.displayName || 'Sin nombre'}</p>
                           <p className="text-xs text-gray-400">{u.email}</p>
                         </div>
                         {u.uid === currentUser?.uid && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold">tú</span>
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold">tú</span>
                         )}
                       </div>
                     </td>
@@ -279,12 +278,12 @@ export default function AdminUsuariosPage() {
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {PAGES.filter((page) => u.permissions?.[page]?.read).map((page) => (
-                            <span key={page} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
+                            <span key={page} className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
                               {PAGE_LABELS[page]}
                             </span>
                           ))}
                           {!PAGES.some((p) => u.permissions?.[p]?.create || u.permissions?.[p]?.update || u.permissions?.[p]?.delete) && (
-                            <span className="text-[10px] text-gray-400">Solo lectura</span>
+                            <span className="text-[11px] text-gray-500">Solo lectura</span>
                           )}
                         </div>
                       )}

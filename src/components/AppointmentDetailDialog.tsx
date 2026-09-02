@@ -76,11 +76,11 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col"
+        className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -106,7 +106,7 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-5 py-3">
-          <Row icon={<Clock size={14} />}  label="Horario"    value={`${appt.startTime} – ${appt.endTime}`} />
+          <Row icon={<Clock size={14} />}  label="Horario"    value={`${appt.startTime} · ${appt.endTime}`} />
           <Row icon={<Wrench size={14} />} label="Rampa"      value={rampLabel} />
           <Row icon={<User size={14} />}   label="Asesor"     value={appt.advisor} />
           <Row icon={<User size={14} />}   label="Técnico"    value={appt.tecnico} />

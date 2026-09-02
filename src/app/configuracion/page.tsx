@@ -8,6 +8,7 @@ import { getUsersList, setUserRole, setUserActive } from '@/lib/firestore/users'
 import { useAuth } from '@/context/AuthContext';
 import { Plus, Pencil, Check, X, Upload, Shield, ShieldOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { PageHeader, Card, TableSkeleton } from '@/components/ui/primitives';
 
 type EditState = { id: string; name: string } | null;
 
@@ -47,8 +48,8 @@ function BulkImportModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h3 className="font-bold text-gray-800">Importar {title}</h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100">
@@ -72,7 +73,7 @@ function BulkImportModal({
           {preview.length > 0 && (
             <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-xs space-y-1">
               <p className="font-semibold text-gray-700">
-                {preview.length} detectados — <span className="text-green-700">{newOnes.length} nuevos</span>
+                {preview.length} detectados · <span className="text-green-700">{newOnes.length} nuevos</span>
                 {dupes.length > 0 && <span className="text-amber-600"> · {dupes.length} ya existen (se omitirán)</span>}
               </p>
               {newOnes.slice(0, 6).map((n) => <p key={n} className="text-gray-600">· {n}</p>)}
@@ -139,16 +140,16 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <Card className="overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="font-semibold text-gray-800">{title}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{items.length} registros</p>
+            <p className="text-xs text-gray-400 mt-0.5 tabular">{items.length} registros</p>
           </div>
           {!readOnly && (
             <div className="flex gap-2">
               <button onClick={() => setShowImport(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors">
                 <Upload size={13} /> Importar lista
               </button>
               <button onClick={() => { setAdding(true); setEdit(null); }}
@@ -160,7 +161,7 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
         </div>
 
         {adding && !readOnly && (
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-blue-50/50">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-blue-50/40">
             <input
               autoFocus
               className={inputCls}
@@ -174,10 +175,10 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
           </div>
         )}
 
-        <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+        <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto flex-1">
           {items.length === 0 && (
             <p className="text-center text-gray-400 text-sm py-10">
-              {readOnly ? 'Sin registros' : 'Sin registros — usa "Importar lista" para cargar varios a la vez'}
+              {readOnly ? 'Sin registros' : 'Sin registros. Usa "Importar lista" para cargar varios a la vez'}
             </p>
           )}
           {items.map((item) => (
@@ -222,7 +223,7 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {showImport && !readOnly && (
         <BulkImportModal
@@ -268,7 +269,7 @@ function UsersSection({ currentUid }: { currentUid: string }) {
     const next = u.role === 'admin' ? 'user' : 'admin';
     try {
       await setUserRole(u.uid, next);
-      toast.success(`${u.email} — rol cambiado a ${next === 'admin' ? 'Administrador' : 'Usuario'}`);
+      toast.success(`${u.email}: rol cambiado a ${next === 'admin' ? 'Administrador' : 'Usuario'}`);
       load();
     } catch {
       toast.error('Error al cambiar el rol');
@@ -286,20 +287,20 @@ function UsersSection({ currentUid }: { currentUid: string }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-purple-100 bg-purple-50/40">
+    <Card className="overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50/60 to-transparent">
         <div>
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Shield size={15} className="text-purple-600" />
+            <Shield size={15} className="text-violet-600" />
             Usuarios y permisos
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">{users.length} registros — solo visible para administradores</p>
+          <p className="text-xs text-gray-500 mt-0.5">{users.length} registros · solo visible para administradores</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
@@ -353,7 +354,7 @@ function UsersSection({ currentUid }: { currentUid: string }) {
           })}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -466,19 +467,18 @@ export default function ConfiguracionPage() {
 
   return (
     <AppShell>
-      <div className="px-6 py-6 max-w-screen-lg mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Catálogos de asesores, técnicos y modelos de auto
-            {!isAdmin && ' — solo lectura, contacta a un administrador para realizar cambios'}
-          </p>
-        </div>
+      <div className="px-6 py-7 max-w-screen-lg mx-auto space-y-6">
+        <PageHeader
+          title="Configuración"
+          description={
+            isAdmin
+              ? 'Catálogos de asesores, técnicos y modelos de auto'
+              : 'Catálogos de asesores, técnicos y modelos de auto · solo lectura: contacta a un administrador para realizar cambios'
+          }
+        />
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <TableSkeleton rows={5} cols={3} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <CatalogSection

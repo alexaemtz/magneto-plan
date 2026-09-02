@@ -17,8 +17,8 @@ export default function RampBlockDetailDialog({ block, onClose, onReactivate }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-red-50 text-red-500"><Ban size={16} /></span>
@@ -34,7 +34,7 @@ export default function RampBlockDetailDialog({ block, onClose, onReactivate }: 
             <Calendar size={14} className="text-gray-400 mt-0.5 shrink-0" />
             <p className="text-sm text-gray-700">
               Desde {isoToDisplay(block.startDate)} {block.startTime}
-              {block.endDate ? ` hasta ${isoToDisplay(block.endDate)} ${block.endTime ?? ''}` : ' — indefinido'}
+              {block.endDate ? ` hasta ${isoToDisplay(block.endDate)} ${block.endTime ?? ''}` : ' (indefinido)'}
             </p>
           </div>
           {block.carModel && (

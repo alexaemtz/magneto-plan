@@ -2,37 +2,143 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #16181d;
+
+  /* Surfaces */
+  --surface:      #ffffff;
+  --surface-muted: #f6f7f9;
+  --surface-ring:  #e7e9ee;
+
+  /* Custom easing curves — UI interactions */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ── Brand palette ──────────────────────────────────────────────────────────
+   Overrides the default Tailwind `blue` scale with a calmer, deeper cobalt so
+   every `blue-*` utility across the app rethemes through the theme system.  */
+@theme {
+  --color-blue-50:  #eff4ff;
+  --color-blue-100: #e2ecfc;
+  --color-blue-200: #c4d6fa;
+  --color-blue-300: #94b4f4;
+  --color-blue-400: #5f89ec;
+  --color-blue-500: #3d63e0;
+  --color-blue-600: #2b48d0;
+  --color-blue-700: #253aac;
+  --color-blue-800: #22328a;
+  --color-blue-900: #1d2b6c;
+  --color-blue-950: #151c41;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-poppins);
+  --font-sans: var(--font-outfit);
+  --ease-out-quart: var(--ease-out-quart);
+  --ease-out-expo:  var(--ease-out-expo);
+  --ease-in-out-quart: var(--ease-in-out-quart);
+}
+
+/* ── Motion primitives (compartidos) ──────────────────────────────── */
+
+/* Press feedback: scale on :active, keep color transitions interruptible */
+@utility pressable {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-timing-function: var(--ease-out-quart);
+  transition-duration: 160ms;
+  &:active { transform: scale(0.97); }
+}
+
+/* Overlay fade + modal/drawer/popover entrances — enter-only via animation
+   (no exit animation, matching the "instant on release" principle) */
+@keyframes overlay-in {
+  from { opacity: 0; }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes drawer-in {
+  from { opacity: 0.5; transform: translateX(16px); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.97); }
+}
+
+.overlay {
+  animation: overlay-in 200ms ease-out;
+}
+
+.modal-card {
+  transform-origin: center;
+  animation: modal-in 240ms var(--ease-out-quart);
+}
+
+.drawer-card {
+  transform-origin: center;
+  animation: drawer-in 240ms var(--ease-out-quart);
+}
+
+.dropdown-card {
+  animation: pop-in 160ms var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .modal-card,
+  .drawer-card,
+  .dropdown-card {
+    animation-duration: 0.01ms;
+  }
+  .pressable:active {
+    transform: none;
+  }
+}
+
+/* ── Shared primitives ─────────────────────────────────────────────── */
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-outfit), sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar discreto */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+h1, h2, h3 {
+  text-wrap: balance;
+  letter-spacing: -0.01em;
 }
-::-webkit-scrollbar-track {
+
+/* Scrollbar discreto y suave */
+html {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
   background: transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.22);
-}
-html {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }

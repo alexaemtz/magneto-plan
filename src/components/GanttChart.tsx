@@ -135,31 +135,31 @@ export default function GanttChart({
   const totalWidth  = slots.length * SLOT_WIDTH + 112;
 
   return (
-    <div className="w-full overflow-x-auto">
-    <div className="relative rounded-xl border border-gray-200 bg-white shadow-sm" style={{ width: 'fit-content' }}>
+    <div className="w-full overflow-x-auto pb-1">
+    <div className="relative rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]" style={{ width: 'fit-content' }}>
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 px-4 py-3 border-b border-gray-100 bg-gray-50">
+      <div className="flex flex-wrap gap-1.5 px-4 py-3 border-b border-gray-100 bg-gray-50/60">
         {Object.entries(SERVICE_LABELS).map(([key, label]) => (
           <span
             key={key}
-            className={cn('text-xs px-2 py-0.5 rounded-full border font-medium', SERVICE_COLORS_LIGHT[key as keyof typeof SERVICE_COLORS_LIGHT])}
+            className={cn('text-[11px] px-2 py-0.5 rounded-md border font-medium leading-4', SERVICE_COLORS_LIGHT[key as keyof typeof SERVICE_COLORS_LIGHT])}
           >
             {label}
           </span>
         ))}
       </div>
 
-      <div style={{ minWidth: totalWidth }} className="relative">
+      <div key={date} style={{ minWidth: totalWidth }} className="relative">
         {/* Header: time slots */}
         <div className="flex sticky top-0 z-10 bg-white border-b border-gray-200">
-          <div className="w-28 shrink-0 bg-gray-50 border-r border-gray-200 flex items-center justify-center text-xs font-semibold text-gray-500 uppercase tracking-wide py-3">
+          <div className="w-28 shrink-0 bg-gray-50/60 border-r border-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-500 uppercase tracking-wide py-3">
             Rampa
           </div>
           {slots.map((t) => (
             <div
               key={t}
               style={{ width: SLOT_WIDTH, minWidth: SLOT_WIDTH }}
-              className="text-center text-xs font-medium text-gray-500 py-3 border-r border-gray-100 shrink-0"
+              className="text-center text-[11px] font-medium text-gray-500 tabular py-3 border-r border-gray-100 shrink-0"
             >
               {t}
             </div>
@@ -184,8 +184,8 @@ export default function GanttChart({
             >
               {/* Row label */}
               <div className={cn(
-                'w-28 shrink-0 border-r border-gray-200 flex items-center justify-center text-xs font-bold text-gray-700 uppercase tracking-wide px-1',
-                row.type === 'ramp'    && 'bg-gray-50',
+                'w-28 shrink-0 border-r border-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-600 uppercase tracking-wide px-1',
+                row.type === 'ramp'    && 'bg-gray-50/60',
                 row.type === 'no_ramp' && 'bg-amber-100 text-amber-700',
                 row.type === 'no_show' && 'bg-red-100 text-red-700',
                 row.type === 'wash'    && 'bg-sky-100 text-sky-700',
@@ -228,7 +228,7 @@ export default function GanttChart({
                         style={{ width: SLOT_WIDTH * span, minWidth: SLOT_WIDTH * span, opacity: isDragging ? 0.4 : 1 }}
                         className={cn(
                           'shrink-0 relative rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden',
-                          'flex flex-col justify-center gap-0.5 transition-all hover:brightness-95',
+                          'flex flex-col justify-center gap-0.5 transition-[filter] hover:brightness-95',
                           onMove ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                           SERVICE_COLORS_LIGHT[occupant.serviceType],
                         )}
@@ -278,7 +278,7 @@ export default function GanttChart({
                           minWidth: SLOT_WIDTH,
                           backgroundImage: 'repeating-linear-gradient(45deg, #e5e7eb, #e5e7eb 6px, #d1d5db 6px, #d1d5db 12px)',
                         }}
-                        className="shrink-0 border-r border-gray-200 flex items-center justify-center cursor-pointer hover:brightness-95 transition-all"
+                        className="shrink-0 border-r border-gray-200 flex items-center justify-center cursor-pointer hover:brightness-95 transition-[filter]"
                         onClick={() => onSelectRampBlock?.(blockedRange!.block)}
                         title="Rampa inhabilitada"
                       >
@@ -356,16 +356,16 @@ export default function GanttChart({
           className="fixed z-50 pointer-events-none bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 max-w-xs space-y-0.5"
           style={{ left: tooltip.x + 12, top: tooltip.y - 10 }}
         >
-          <p className="font-bold">{tooltip.appt.carModel} — {SERVICE_LABELS[tooltip.appt.serviceType]}</p>
-          <p>VIN: {tooltip.appt.serialNumber || '—'}</p>
+          <p className="font-bold">{tooltip.appt.carModel} · {SERVICE_LABELS[tooltip.appt.serviceType]}</p>
+          <p>VIN: {tooltip.appt.serialNumber || 'Sin VIN'}</p>
           <p>Cliente: {tooltip.appt.clientName}</p>
           <p>Tel: {tooltip.appt.clientPhone}</p>
           <p>Asesor: {tooltip.appt.advisor}</p>
           {tooltip.appt.tecnico && <p>Técnico: {tooltip.appt.tecnico}</p>}
-          <p>En proceso: {tooltip.appt.startTime} – {tooltip.appt.endTime}</p>
+          <p>En proceso: {tooltip.appt.startTime} · {tooltip.appt.endTime}</p>
           {tooltip.appt.status === 'LAVADO' && tooltip.appt.lavadoStartTime && (
             <p className="text-sky-300">
-              Lavado: {tooltip.appt.lavadoStartTime} – {minutesToTime(timeToMinutes(tooltip.appt.lavadoStartTime) + WASH_MIN)}
+              Lavado: {tooltip.appt.lavadoStartTime} · {minutesToTime(timeToMinutes(tooltip.appt.lavadoStartTime) + WASH_MIN)}
             </p>
           )}
           {tooltip.appt.km != null && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
@@ -375,10 +375,10 @@ export default function GanttChart({
 
       {/* "+" menu: nueva cita vs. inhabilitar rampa */}
       {menuCell && (
-        <div className="fixed inset-0 z-40" onClick={() => setMenuCell(null)}>
+        <div className="overlay fixed inset-0 z-40" onClick={() => setMenuCell(null)}>
           <div
-            className="absolute bg-white rounded-xl shadow-2xl border border-gray-200 py-1 w-48"
-            style={{ left: menuCell.x, top: menuCell.y }}
+            className="dropdown-card absolute bg-white rounded-xl shadow-2xl border border-gray-200 py-1 w-48"
+            style={{ left: menuCell.x, top: menuCell.y, ['--origin' as string]: 'top left' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button

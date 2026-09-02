@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Appointment } from '@/types';
 import { timeToMinutes, cn } from '@/lib/utils';
 import { Sun, Moon, CalendarOff, Users } from 'lucide-react';
+import { StatCard } from '@/components/ui/primitives';
 
 interface Props {
   appointments: Appointment[];
@@ -70,15 +71,15 @@ export default function TecnicoHoursTab({ appointments }: Props) {
   }, [selectedTecnico, statsByTecnico]);
 
   const cards = [
-    { key: 'matutino', label: 'Turno Matutino', sub: '7:00 – 12:00', value: cardsData.matutino, icon: Sun, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { key: 'vespertino', label: 'Turno Vespertino', sub: '12:00 – 21:00', value: cardsData.vespertino, icon: Moon, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { key: 'sinCita', label: 'Sin Cita', sub: 'Todo el día', value: cardsData.sinCita, icon: CalendarOff, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { key: 'matutino', label: 'Turno Matutino', sub: '7:00 a 12:00', value: cardsData.matutino, icon: Sun, tone: 'warning' },
+    { key: 'vespertino', label: 'Turno Vespertino', sub: '12:00 a 21:00', value: cardsData.vespertino, icon: Moon, tone: 'accent' },
+    { key: 'sinCita', label: 'Sin Cita', sub: 'Todo el día', value: cardsData.sinCita, icon: CalendarOff, tone: 'danger' },
   ] as const;
 
   return (
     <div className="space-y-4">
       {/* Filtro por técnico */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3.5 flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] px-5 py-3.5 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
           <Users size={15} className="text-gray-400" />
           Técnico
@@ -105,26 +106,21 @@ export default function TecnicoHoursTab({ appointments }: Props) {
 
       {/* Cards de horas por turno */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {cards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <div key={c.key} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 font-medium">{c.label}</p>
-                <div className={cn('p-1.5 rounded-lg', c.bg)}>
-                  <Icon size={14} className={c.color} />
-                </div>
-              </div>
-              <p className={cn('text-3xl font-bold mt-1', c.color)}>{formatHours(c.value)} h</p>
-              <p className="text-xs text-gray-400 mt-0.5">{c.sub}</p>
-            </div>
-          );
-        })}
+        {cards.map((c) => (
+          <StatCard
+            key={c.key}
+            label={c.label}
+            value={`${formatHours(c.value)} h`}
+            sub={c.sub}
+            tone={c.tone}
+            icon={<c.icon size={17} />}
+          />
+        ))}
       </div>
 
       {/* Gráfica de barras: total de horas por técnico */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-5">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Total de horas por técnico</h3>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] px-5 py-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">Total de horas por técnico</h3>
 
         {statsByTecnico.length === 0 ? (
           <div className="py-10 text-center text-gray-400 text-sm">
@@ -151,13 +147,13 @@ export default function TecnicoHoursTab({ appointments }: Props) {
                     </span>
                     <span className="text-xs font-semibold text-gray-800">{formatHours(s.total)} h</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-4">
+                  <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
                     <div
                       className={cn(
-                        'h-4 rounded-full transition-all duration-300',
+                        'h-full rounded-full origin-left transform-gpu transition-transform duration-300 ease-out',
                         isSelected ? 'bg-blue-600' : 'bg-blue-400',
                       )}
-                      style={{ width: `${pct}%` }}
+                      style={{ width: '100%', transform: `scaleX(${pct / 100})` }}
                     />
                   </div>
 

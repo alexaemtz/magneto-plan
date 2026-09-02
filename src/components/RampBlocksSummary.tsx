@@ -30,25 +30,25 @@ export default function RampBlocksSummary({ blocks, onReactivate }: Props) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+          <div className="overlay fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="dropdown-card absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden" style={{ ['--origin' as string]: 'top right' }}>
             <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
               {current.map((b) => (
-                <div key={b.id} className="px-3.5 py-2.5">
+                <div key={b.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-gray-800">{formatRamp(b.ramp)}</p>
+                    <p className="text-sm font-semibold text-gray-800">{formatRamp(b.ramp)}</p>
                     <button
                       onClick={() => { onReactivate(b); setOpen(false); }}
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 shrink-0"
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 shrink-0"
                     >
                       Reactivar
                     </button>
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    Desde {isoToDisplay(b.startDate)}{b.endDate ? ` hasta ${isoToDisplay(b.endDate)}` : ' — indefinido'}
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Desde {isoToDisplay(b.startDate)}{b.endDate ? ` hasta ${isoToDisplay(b.endDate)}` : ' (indefinido)'}
                   </p>
-                  {b.carModel && <p className="text-[11px] text-gray-400">{b.carModel}</p>}
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">{b.notes}</p>
+                  {b.carModel && <p className="text-xs text-gray-400 mt-0.5">{b.carModel}</p>}
+                  <p className="text-sm text-gray-600 mt-1 leading-relaxed line-clamp-2">{b.notes}</p>
                 </div>
               ))}
             </div>

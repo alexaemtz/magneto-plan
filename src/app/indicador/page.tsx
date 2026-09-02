@@ -116,7 +116,7 @@ export default function IndicadorPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Indicador Diario</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Historial mensual — acumulado calculado automáticamente</p>
+            <p className="text-sm text-gray-500 mt-0.5">Historial mensual, acumulado calculado automáticamente</p>
           </div>
 
           <div className="flex items-center gap-3">

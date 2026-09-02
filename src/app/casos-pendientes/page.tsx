@@ -3,12 +3,14 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import AppShell from '@/components/AppShell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { PendingCase } from '@/types';
 import { subscribeToPendingCases, createPendingCase, updatePendingCase, deletePendingCase } from '@/lib/firestore/pendingCases';
 import { todayISO, isoToDisplay } from '@/lib/utils';
-import { Plus, Trash2, Pencil, X, ChevronUp, ChevronDown, ChevronsUpDown, Filter } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, ChevronUp, ChevronDown, ChevronsUpDown, Filter, ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearch } from '@/context/SearchContext';
+import { PageHeader, TableSkeleton } from '@/components/ui/primitives';
 
 // ── Column definitions ────────────────────────────────────────────────────────
 
@@ -85,21 +87,21 @@ function FilterDropdown({ col, top, left, cases, active, onClose, onChange }: {
     onChange(next);
   }
   return createPortal(
-    <div ref={ref} style={{ position: 'fixed', top, left, zIndex: 9999 }}
-      className="w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 max-h-72 overflow-y-auto">
-      <div className="flex items-center justify-between px-3 pb-2 border-b border-gray-100 mb-1">
-        <span className="text-xs font-semibold text-gray-400 tracking-wide">FILTRAR</span>
+    <div ref={ref} style={{ position: 'fixed', top, left, zIndex: 9999, ['--origin' as string]: 'top left' }}
+      className="dropdown-card w-60 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 max-h-80 overflow-y-auto">
+      <div className="flex items-center justify-between px-3.5 pb-2 border-b border-gray-100 mb-1.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Filtrar</span>
         {active.size > 0 && (
           <button onClick={() => onChange(new Set())} className="text-xs text-red-500 hover:text-red-700 font-medium">Limpiar</button>
         )}
       </div>
       {unique.length === 0
-        ? <p className="px-3 py-2 text-xs text-gray-400">Sin valores</p>
+        ? <p className="px-3.5 py-2 text-sm text-gray-400">Sin valores</p>
         : unique.map((v) => (
-          <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" className="rounded border-gray-300 text-blue-600 w-3.5 h-3.5"
+          <label key={v} className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer">
+            <input type="checkbox" className="rounded border-gray-300 text-blue-600 w-4 h-4"
               checked={active.has(v)} onChange={() => toggle(v)} />
-            <span className="text-xs text-gray-700 truncate">{v || '—'}</span>
+            <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
           </label>
         ))
       }
@@ -147,6 +149,7 @@ export default function CasosPendientesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>(null);
   const [filters, setFilters] = useState<Partial<Record<ColKey, Set<string>>>>({});
   const [openFilter, setOpenFilter] = useState<FilterAnchor | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<PendingCase | null>(null);
   const resizeRef = useRef<{ col: ColKey; startX: number; startW: number } | null>(null);
 
   useEffect(() => {
@@ -227,8 +230,12 @@ export default function CasosPendientesPage() {
     }
   }
 
-  async function handleDelete(c: PendingCase) {
-    if (!confirm(`¿Eliminar caso de ${c.clientName}?`)) return;
+  function handleDelete(c: PendingCase) {
+    setConfirmDelete(c);
+  }
+
+  async function handleDeleteConfirmed(c: PendingCase) {
+    setConfirmDelete(null);
     await deletePendingCase(c.id!);
     toast.success('Caso eliminado');
   }
@@ -245,39 +252,34 @@ export default function CasosPendientesPage() {
 
   return (
     <AppShell>
-      <div className="px-6 py-6 space-y-5 max-w-screen-xl mx-auto">
+      <div className="px-6 py-7 space-y-5 max-w-screen-xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Casos Pendientes</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Refacciones, cargadores y garantías en espera</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {activeFilterCount > 0 && (
-              <button
-                onClick={() => setFilters({})}
-                className="text-xs text-red-500 hover:text-red-700 font-medium"
-              >
-                Limpiar {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''}
-              </button>
-            )}
+        <PageHeader
+          title="Casos Pendientes"
+          description="Refacciones, cargadores y garantías en espera"
+        >
+          {activeFilterCount > 0 && (
             <button
-              onClick={openNew}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
+              onClick={() => setFilters({})}
+              className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
             >
-              <Plus size={16} />
-              Nuevo caso
+              Limpiar {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''}
             </button>
-          </div>
-        </div>
+          )}
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
+          >
+            <Plus size={16} />
+            Nuevo caso
+          </button>
+        </PageHeader>
 
         {/* Table */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
+          <TableSkeleton rows={8} cols={8} />
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="table-fixed text-sm" style={{ width: tableWidth }}>
                 <colgroup>
@@ -285,7 +287,7 @@ export default function CasosPendientesPage() {
                   <col style={{ width: ACTIONS_W }} />
                 </colgroup>
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-gray-50/70 border-b border-gray-200">
                     {COLUMNS.map((col) => {
                       const active = filters[col.key] ?? new Set<string>();
                       const hasFilter = active.size > 0;
@@ -294,7 +296,7 @@ export default function CasosPendientesPage() {
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleSort(col.key)}
-                              className="flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-gray-900 min-w-0 truncate"
+                              className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-gray-500 hover:text-gray-800 min-w-0 truncate"
                             >
                               <span className="truncate">{col.label}</span>
                               <SortIcon col={col.key} sortCol={sortCol} sortDir={sortDir} />
@@ -304,7 +306,7 @@ export default function CasosPendientesPage() {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 setOpenFilter({ col: col.key, top: rect.bottom + 4, left: rect.left });
                               }}
-                              className={`p-0.5 rounded hover:bg-gray-200 transition-colors shrink-0 ${hasFilter ? 'text-blue-500' : 'text-gray-400'}`}
+                              className={`p-0.5 rounded hover:bg-gray-200 transition-colors shrink-0 ${hasFilter ? 'text-blue-600' : 'text-gray-400'}`}
                             >
                               <Filter size={11} />
                             </button>
@@ -316,18 +318,22 @@ export default function CasosPendientesPage() {
                         </th>
                       );
                     })}
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Acciones</th>
+                    <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {displayed.length === 0 ? (
                     <tr>
-                      <td colSpan={COLUMNS.length + 1} className="py-12 text-center text-gray-400">
-                        No hay casos pendientes
+                      <td colSpan={COLUMNS.length + 1} className="py-14 text-center">
+                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                          <ClipboardList size={22} className="text-gray-300" />
+                          <p className="text-sm text-gray-500 font-medium">No hay casos pendientes</p>
+                          <p className="text-xs text-gray-400">Las refacciones, cargadores o garantías en espera aparecerán aquí.</p>
+                        </div>
                       </td>
                     </tr>
                   ) : displayed.map((c) => (
-                    <tr key={c.id} className="hover:bg-gray-50/50">
+                    <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="px-3 py-3 text-gray-600 whitespace-nowrap truncate">{isoToDisplay(c.date)}</td>
                       <td className="px-3 py-3 font-medium text-gray-800 truncate">{c.carModel}</td>
                       <td className="px-3 py-3 font-mono text-xs text-gray-600 truncate">{c.vin}</td>
@@ -379,8 +385,8 @@ export default function CasosPendientesPage() {
 
       {/* Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-800">{editCase ? 'Editar caso' : 'Nuevo caso pendiente'}</h2>
               <button onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-gray-100">
@@ -451,6 +457,15 @@ export default function CasosPendientesPage() {
             </div>
           </div>
         </div>
+      )}
+      {confirmDelete && (
+        <ConfirmDialog
+          title="¿Eliminar caso?"
+          message={`${confirmDelete.clientName} · ${confirmDelete.carModel}`}
+          detail={confirmDelete.workOrder ? `Orden de trabajo: ${confirmDelete.workOrder}` : undefined}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => handleDeleteConfirmed(confirmDelete)}
+        />
       )}
     </AppShell>
   );

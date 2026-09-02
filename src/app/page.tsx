@@ -9,26 +9,28 @@ import AppointmentDetailDialog from '@/components/AppointmentDetailDialog';
 import RampBlockForm from '@/components/RampBlockForm';
 import RampBlockDetailDialog from '@/components/RampBlockDetailDialog';
 import RampBlocksSummary from '@/components/RampBlocksSummary';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Appointment, Ramp, RampBlock } from '@/types';
-import { subscribeToAppointmentsByDate, deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
+import { deleteAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { subscribeToRampBlocks, deleteRampBlock } from '@/lib/firestore/rampBlocks';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
-import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useDateAppointments } from '@/hooks/useDateAppointments';
+import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight, Calendar, CalendarDays, CircleCheck, Loader2, Wrench, Inbox } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSearch } from '@/context/SearchContext';
+import { PageHeader, StatCard, Card, EmptyState, Skeleton } from '@/components/ui/primitives';
 
 export default function DashboardPage() {
   const [date, setDate]     = useState(todayISO());
   const dateInputRef        = useRef<HTMLInputElement>(null);
   const perms               = usePermissions('dashboard');
+  const { appointments, loading } = useDateAppointments(date);
 
   function shiftDay(n: number) {
     const d = new Date(date + 'T12:00:00');
     d.setDate(d.getDate() + n);
     setDate(d.toISOString().split('T')[0]);
   }
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | undefined>();
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
@@ -39,6 +41,8 @@ export default function DashboardPage() {
   const [blockRamp, setBlockRamp] = useState<Ramp | null>(null);
   const [blockTime, setBlockTime] = useState('08:00');
   const [detailBlock, setDetailBlock] = useState<RampBlock | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Appointment | null>(null);
+  const [confirmReactivate, setConfirmReactivate] = useState<RampBlock | null>(null);
   const { query } = useSearch();
 
   const searchedAppts = (() => {
@@ -50,14 +54,6 @@ export default function DashboardPage() {
         .some((v) => v?.toLowerCase().includes(q))
     );
   })();
-
-  useEffect(() => {
-    const unsub = subscribeToAppointmentsByDate(date, (appts) => {
-      setAppointments(appts);
-      setLoading(false);
-    });
-    return unsub;
-  }, [date]);
 
   useEffect(() => {
     const unsub = subscribeToRampBlocks(setRampBlocks);
@@ -82,8 +78,12 @@ export default function DashboardPage() {
     setShowForm(true);
   }
 
-  async function handleDelete(appt: Appointment) {
-    if (!confirm(`¿Eliminar cita de ${appt.clientName}?`)) return;
+  function handleDelete(appt: Appointment) {
+    setConfirmDelete(appt);
+  }
+
+  async function handleDeleteConfirmed(appt: Appointment) {
+    setConfirmDelete(null);
     await deleteAppointment(appt.id!, date);
     toast.success('Cita eliminada');
   }
@@ -95,8 +95,8 @@ export default function DashboardPage() {
     setShowBlockForm(true);
   }
 
-  async function handleReactivateRamp(block: RampBlock) {
-    if (!confirm(`¿Reactivar Rampa ${block.ramp}?`)) return;
+  async function handleReactivateConfirmed(block: RampBlock) {
+    setConfirmReactivate(null);
     await deleteRampBlock(block.id!);
     toast.success('Rampa reactivada');
   }
@@ -131,86 +131,88 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="px-6 py-6 space-y-6 max-w-screen-2xl mx-auto">
+      <div className="px-6 py-7 space-y-6 max-w-screen-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{formatDate(date)}</p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <RampBlocksSummary blocks={rampBlocks} onReactivate={handleReactivateRamp} />
+        <PageHeader
+          title="Dashboard"
+          description={`${formatDate(date)} · Servicios programados y estado de rampas`}
+        >
+          <RampBlocksSummary blocks={rampBlocks} onReactivate={(b) => setConfirmReactivate(b)} />
 
-            {/* Date navigator */}
-            <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-1">
-              <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <ChevronLeft size={18} className="text-gray-600" />
-              </button>
-              <div
-                className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={() => dateInputRef.current?.showPicker()}
-              >
-                <Calendar size={14} className="text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 select-none">
-                  {isoToDisplay(date)}
-                </span>
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="sr-only"
-                />
-              </div>
-              <button onClick={() => shiftDay(1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                <ChevronRight size={18} className="text-gray-600" />
-              </button>
+          {/* Date navigator */}
+          <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] px-1.5 py-1.5">
+            <button
+              onClick={() => shiftDay(-1)}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+              aria-label="Día anterior"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div
+              className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => dateInputRef.current?.showPicker()}
+            >
+              <Calendar size={14} className="text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 select-none tabular">
+                {isoToDisplay(date)}
+              </span>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="sr-only"
+              />
             </div>
-
-            {perms.create && (
-              <button
-                onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
-              >
-                <Plus size={16} />
-                Nueva cita
-              </button>
-            )}
+            <button
+              onClick={() => shiftDay(1)}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+              aria-label="Día siguiente"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
-        </div>
+
+          {perms.create && (
+            <button
+              onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
+            >
+              <Plus size={16} />
+              Nueva cita
+            </button>
+          )}
+        </PageHeader>
 
         {/* Stats */}
         {(() => {
           const totalHours = appointments.reduce((sum, a) => sum + (a.workHours ?? 0), 0);
           const hoursDisplay = totalHours.toFixed(1);
           return (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-              {[
-                { label: 'Total del día',  value: appointments.length,                                        unit: '',  color: 'text-blue-600'   },
-                { label: 'Entregados',     value: appointments.filter(a => a.status === 'ENTREGADO').length,  unit: '',  color: 'text-green-600'  },
-                { label: 'En proceso',     value: appointments.filter(a => a.status === 'EN_PROCESO').length,  unit: '',  color: 'text-amber-600'  },
-                { label: 'No show',        value: appointments.filter(a => a.status === 'NO_SHOW').length,     unit: '',  color: 'text-red-600'    },
-                { label: 'Horas del día',  value: hoursDisplay,                                               unit: ' h', color: 'text-violet-600' },
-              ].map((s) => (
-                <div key={s.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-                  <p className="text-xs text-gray-500 font-medium">{s.label}</p>
-                  <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}{s.unit}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+              <StatCard label="Total del día" value={appointments.length} tone="accent" icon={<CalendarDays size={17} />} />
+              <StatCard label="Entregados" value={appointments.filter(a => a.status === 'ENTREGADO').length} tone="success" icon={<CircleCheck size={17} />} />
+              <StatCard label="En proceso" value={appointments.filter(a => a.status === 'EN_PROCESO').length} tone="warning" icon={<Loader2 size={17} />} />
+              <StatCard label="No show" value={appointments.filter(a => a.status === 'NO_SHOW').length} tone="danger" icon={<Inbox size={17} />} />
+              <StatCard label="Horas del día" value={hoursDisplay} sub="Tiempo en rampa" tone="violet" icon={<Wrench size={17} />} />
             </div>
           );
         })()}
 
         {/* Gantt */}
         <div>
-          <h2 className="text-base font-semibold text-gray-700 mb-3">
-            Magneto Plan — Hoy
-            {query.trim() && <span className="ml-2 text-sm font-normal text-gray-400">({searchedAppts.length} de {appointments.length})</span>}
-          </h2>
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2 className="text-base font-semibold text-gray-800 tracking-tight">
+              Magneto Plan · Hoy
+            </h2>
+            {query.trim() && (
+              <span className="text-xs font-medium text-gray-400">
+                {searchedAppts.length} de {appointments.length} citas
+              </span>
+            )}
+          </div>
           {loading ? (
-            <div className="h-48 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <Skeleton className="h-[440px] w-full rounded-2xl" />
           ) : (
             <GanttChart
               appointments={searchedAppts}
@@ -228,40 +230,51 @@ export default function DashboardPage() {
 
         {/* Citas list */}
         <div>
-          <h2 className="text-base font-semibold text-gray-700 mb-3">
-            Citas — {isoToDisplay(date)} ({searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''})
-          </h2>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            {searchedAppts.length === 0 ? (
-              <div className="py-12 text-center text-gray-400 text-sm">
-                {query.trim() ? 'Sin resultados para la búsqueda' : 'No hay citas para hoy'}
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                {searchedAppts.map((a) => (
-                  <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50">
-                    <div className="text-xs font-mono text-gray-500 w-10 shrink-0">{a.startTime}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{a.carModel} — {a.clientName}</p>
-                      <p className="text-xs text-gray-500 truncate">{a.serialNumber} | Asesor: {a.advisor}</p>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      {perms.update && (
-                        <button onClick={() => handleEditFromDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
-                          <Pencil size={14} />
-                        </button>
-                      )}
-                      {perms.delete && (
-                        <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2 className="text-base font-semibold text-gray-800 tracking-tight">
+              Citas · {isoToDisplay(date)}
+            </h2>
+            <span className="text-xs font-medium text-gray-400 tabular">
+              {loading ? '…' : `${searchedAppts.length}${searchedAppts.length !== appointments.length ? ` / ${appointments.length}` : ''}`}
+            </span>
           </div>
+          {loading ? (
+            <Skeleton className="h-56 w-full rounded-2xl" />
+          ) : (
+            <>
+              {searchedAppts.length === 0 ? (
+                query.trim()
+                  ? <EmptyState title="Sin resultados para la búsqueda" description="Prueba con otro término o limpia la búsqueda." />
+                  : <EmptyState title="No hay citas para hoy" description="Usa «Nueva cita» para agendar el primer servicio." />
+              ) : (
+                <Card className="overflow-hidden">
+                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                    {searchedAppts.map((a) => (
+                      <div key={a.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50/70 transition-colors">
+                        <div className="text-xs font-medium text-gray-500 tabular w-10 shrink-0">{a.startTime}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{a.carModel} · {a.clientName}</p>
+                          <p className="text-xs text-gray-500 truncate">{a.serialNumber} | Asesor: {a.advisor}</p>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          {perms.update && (
+                            <button onClick={() => handleEditFromDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                          {perms.delete && (
+                            <button onClick={() => handleDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -300,7 +313,27 @@ export default function DashboardPage() {
         <RampBlockDetailDialog
           block={detailBlock}
           onClose={() => setDetailBlock(null)}
-          onReactivate={handleReactivateRamp}
+          onReactivate={(b) => setConfirmReactivate(b)}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="¿Eliminar cita?"
+          message={`${confirmDelete.clientName} · ${confirmDelete.carModel}`}
+          detail={`${isoToDisplay(confirmDelete.date)} · ${confirmDelete.startTime}`}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => handleDeleteConfirmed(confirmDelete)}
+        />
+      )}
+
+      {confirmReactivate && (
+        <ConfirmDialog
+          title="Reactivar rampa"
+          message={`¿Reactivar Rampa ${confirmReactivate.ramp}?`}
+          confirmLabel="Reactivar"
+          onCancel={() => setConfirmReactivate(null)}
+          onConfirm={() => handleReactivateConfirmed(confirmReactivate)}
         />
       )}
     </AppShell>

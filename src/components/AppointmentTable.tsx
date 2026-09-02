@@ -114,11 +114,11 @@ function FilterDropdown({
   return createPortal(
     <div
       ref={ref}
-      style={{ position: 'fixed', top, left, zIndex: 9999 }}
-      className="w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 max-h-72 overflow-y-auto"
+      style={{ position: 'fixed', top, left, zIndex: 9999, ['--origin' as string]: 'top left' }}
+      className="dropdown-card w-60 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 max-h-80 overflow-y-auto"
     >
-      <div className="flex items-center justify-between px-3 pb-2 border-b border-gray-100 mb-1">
-        <span className="text-xs font-semibold text-gray-400 tracking-wide">FILTRAR</span>
+      <div className="flex items-center justify-between px-3.5 pb-2 border-b border-gray-100 mb-1.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Filtrar</span>
         {active.size > 0 && (
           <button onClick={() => onChange(new Set())} className="text-xs text-red-500 hover:text-red-700 font-medium">
             Limpiar
@@ -126,16 +126,16 @@ function FilterDropdown({
         )}
       </div>
       {unique.length === 0
-        ? <p className="px-3 py-2 text-xs text-gray-400">Sin valores</p>
+        ? <p className="px-3.5 py-2 text-sm text-gray-400">Sin valores</p>
         : unique.map((v) => (
-          <label key={v} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
+          <label key={v} className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer">
             <input
               type="checkbox"
-              className="rounded border-gray-300 text-blue-600 w-3.5 h-3.5"
+              className="rounded border-gray-300 text-blue-600 w-4 h-4"
               checked={active.has(v)}
               onChange={() => toggle(v)}
             />
-            <span className="text-xs text-gray-700 truncate">{v || '—'}</span>
+            <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
           </label>
         ))
       }
@@ -150,7 +150,7 @@ function Field({ label, value }: { label: string; value?: string | number | bool
   if (value === undefined || value === null || value === '') return null;
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-0.5">{label}</p>
       <p className="text-sm font-medium text-gray-800">
         {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value)}
       </p>
@@ -160,7 +160,7 @@ function Field({ label, value }: { label: string; value?: string | number | bool
 
 function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onClose: () => void; onEdit: () => void; canEdit: boolean }) {
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-[400px] bg-white shadow-2xl border-l border-gray-200 flex flex-col">
+    <div className="fixed inset-y-0 right-0 z-40 w-[400px] bg-white shadow-2xl border-l border-gray-200 flex flex-col drawer-card">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
         <div>
@@ -196,7 +196,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
         <section>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Cliente</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Cliente</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Nombre" value={appt.clientName} />
             <Field label="Teléfono" value={appt.clientPhone} />
@@ -204,7 +204,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Vehículo</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Vehículo</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Modelo" value={appt.carModel} />
             <Field label="VIN" value={appt.serialNumber} />
@@ -213,7 +213,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Servicio</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Servicio</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Asesor" value={appt.advisor} />
             <Field label="Técnico" value={appt.tecnico} />
@@ -226,7 +226,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Horario</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Horario</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Hora inicio" value={appt.startTime} />
             <Field label="Hora fin" value={appt.endTime} />
@@ -235,7 +235,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-3">Extras</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Extras</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="App BYD" value={appt.appByd} />
             <Field label="Factura" value={appt.invoice} />
@@ -245,7 +245,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
 
         {appt.notes && (
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-2">Notas</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Notas</p>
             <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-3 py-2.5">{appt.notes}</p>
           </section>
         )}
@@ -262,8 +262,8 @@ function DeleteDialog({ appt, onCancel, onConfirm }: {
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-80 p-6 space-y-4">
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-80 p-6 space-y-4">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
             <Trash2 size={16} className="text-red-600" />
@@ -271,7 +271,7 @@ function DeleteDialog({ appt, onCancel, onConfirm }: {
           <div>
             <p className="font-semibold text-gray-800">¿Eliminar cita?</p>
             <p className="text-sm text-gray-500 mt-0.5">
-              {appt.clientName} — {appt.carModel}
+              {appt.clientName} · {appt.carModel}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">{appt.date} · {appt.startTime}</p>
           </div>
@@ -455,7 +455,7 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
       </div>
 
       {/* Table wrapper */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
         <table className="table-fixed border-collapse w-full" style={{ minWidth: COLUMNS.reduce((s, c) => s + colWidths[c.key], 0) + ACTIONS_W }}>
           <colgroup>
             {COLUMNS.map((c) => <col key={c.key} style={{ width: colWidths[c.key] }} />)}
@@ -463,13 +463,13 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
           </colgroup>
 
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="bg-gray-50/70 border-b border-gray-200">
               {COLUMNS.map((col) => {
                 const hasFilter = (filters[col.key]?.size ?? 0) > 0;
                 return (
                   <th
                     key={col.key}
-                    className="relative select-none text-left px-3 py-2.5 text-xs font-semibold text-gray-600 whitespace-nowrap border-r border-gray-200 last:border-r-0"
+                    className="relative select-none text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 whitespace-nowrap border-r border-gray-200 last:border-r-0"
                   >
                     <div className="flex items-center gap-1.5 pr-5">
                       {/* Sort trigger */}
@@ -522,7 +522,7 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
                 );
               })}
 
-              <th className="px-3 py-2.5 text-xs font-semibold text-gray-600 text-center bg-gray-50">
+              <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 text-center bg-gray-50/70">
                 Acciones
               </th>
             </tr>
@@ -564,33 +564,33 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
                           {appt.workOrder}
                         </span>
                       )
-                      : <span className="text-gray-300 text-xs">—</span>
+                      : <span className="text-gray-300 text-xs">&nbsp;</span>
                     }
                   </td>
                   {/* asesor */}
                   <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
-                    {appt.advisor || '—'}
+                    {appt.advisor}
                   </td>
                   {/* técnico */}
                   <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
-                    {appt.tecnico || '—'}
+                    {appt.tecnico}
                   </td>
                   {/* cliente */}
                   <td className="px-3 py-2.5 border-r border-gray-100 truncate">
                     <p className="text-xs font-semibold text-gray-800 truncate">{appt.clientName}</p>
                     {appt.clientPhone && (
-                      <p className="text-[10px] text-gray-400 flex items-center gap-0.5 mt-0.5">
+                      <p className="text-[11px] text-gray-500 flex items-center gap-0.5 mt-0.5">
                         <Phone size={9} />{appt.clientPhone}
                       </p>
                     )}
                   </td>
                   {/* modelo */}
                   <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                    {appt.carModel || '—'}
+                    {appt.carModel}
                   </td>
                   {/* VIN */}
                   <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
-                    {appt.serialNumber || <span className="text-gray-300 font-sans">—</span>}
+                    {appt.serialNumber}
                   </td>
                   {/* tipo */}
                   <td className="px-3 py-2.5 border-r border-gray-100">
@@ -602,7 +602,7 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
                   <td className="px-3 py-2.5 text-xs text-gray-600 text-center border-r border-gray-100">
                     {appt.ramp != null
                       ? <span className="font-semibold text-gray-800">{appt.ramp}</span>
-                      : <span className="text-gray-300">—</span>
+                      : <span className="text-gray-300">&nbsp;</span>
                     }
                   </td>
                   {/* estado */}
@@ -615,7 +615,7 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
                   <td className="px-3 py-2.5 text-center border-r border-gray-100">
                     {appt.campaña
                       ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">Campaña</span>
-                      : <span className="text-gray-300 text-xs">—</span>
+                      : <span className="text-gray-300">&nbsp;</span>
                     }
                   </td>
                   {/* acciones */}

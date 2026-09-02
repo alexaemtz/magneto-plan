@@ -94,7 +94,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
         return;
       }
       toast(
-        `${formatRamp(saveForm.ramp ?? null)} ocupada a las ${saveForm.startTime}. Cita movida al siguiente horario disponible: ${next.startTime} – ${next.endTime}.`,
+        `${formatRamp(saveForm.ramp ?? null)} ocupada a las ${saveForm.startTime}. Cita movida al siguiente horario disponible: ${next.startTime} · ${next.endTime}.`,
         { icon: '📅', duration: 6000 },
       );
       const newDuration = timeToMinutes(next.endTime) - timeToMinutes(next.startTime);
@@ -148,12 +148,12 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
     (form.serviceType === 'SIN_CITA' && form.sinCitaSubtype === 'DIAGNOSTICO');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">
-            {initial?.id ? 'Editar cita' : 'Nueva cita'} — {form.date ?? date}
+            {initial?.id ? 'Editar cita' : 'Nueva cita'} · {form.date ?? date}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
             <X size={20} className="text-gray-500" />
@@ -182,7 +182,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                   key={t}
                   type="button"
                   onClick={() => set('serviceType', t)}
-                  className={`text-xs px-3 py-2 rounded-lg border font-medium transition-all ${
+                  className={`text-xs px-3 py-2 rounded-lg border font-medium transition-colors ${
                     form.serviceType === t
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
@@ -199,7 +199,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <div>
               <label className={labelCls}>Subtipo sin cita</label>
               <select className={inputCls} value={form.sinCitaSubtype ?? ''} onChange={(e) => set('sinCitaSubtype', e.target.value)}>
-                <option value="">— Seleccionar —</option>
+                <option value="">Seleccionar…</option>
                 <option value="MANTENIMIENTO">Mantenimiento</option>
                 <option value="GARANTIA">Garantía</option>
                 <option value="DIAGNOSTICO">Diagnóstico</option>
@@ -228,7 +228,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                 <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
               ) : carModels.length > 0 ? (
                 <select className={inputCls} value={form.carModel ?? ''} onChange={(e) => set('carModel', e.target.value)} required>
-                  <option value="">— Seleccionar —</option>
+                  <option value="">Seleccionar…</option>
                   {carModels.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
                 </select>
               ) : (
@@ -250,7 +250,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
               <div className="flex gap-2 flex-wrap">
                 {MAINTENANCE_LEVELS.map((n) => (
                   <button key={n} type="button" onClick={() => set('maintenanceLevel', n)}
-                    className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-all ${
+                    className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${
                       form.maintenanceLevel === n ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
                     }`}>
                     S{n}
@@ -294,7 +294,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                 <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
               ) : advisors.length > 0 ? (
                 <select className={inputCls} value={form.advisor ?? ''} onChange={(e) => set('advisor', e.target.value)} required>
-                  <option value="">— Seleccionar —</option>
+                  <option value="">Seleccionar…</option>
                   {advisors.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)}
                 </select>
               ) : (
@@ -309,7 +309,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                 <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
               ) : tecnicos.length > 0 ? (
                 <select className={inputCls} value={form.tecnico ?? ''} onChange={(e) => set('tecnico', e.target.value || undefined)}>
-                  <option value="">— Seleccionar —</option>
+                  <option value="">Seleccionar…</option>
                   {tecnicos.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
                 </select>
               ) : (
@@ -354,7 +354,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <div>
               <label className={labelCls}>Horas trabajo</label>
               <div className={`${inputCls} bg-gray-50 text-gray-600 cursor-default select-none`}>
-                {(form.workHours ?? 0) > 0 ? `${form.workHours} h` : '—'}
+                {(form.workHours ?? 0) > 0 ? `${form.workHours} h` : ''}
               </div>
             </div>
 

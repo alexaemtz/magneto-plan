@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import AppShell from '@/components/AppShell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { PartsOrder, PartsOrderStatus } from '@/types';
 import {
   subscribeToPartsOrders,
@@ -25,8 +26,15 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Package,
+  DollarSign,
+  CircleCheck,
+  Clock,
+  Star,
+  XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { PageHeader, Card, StatCard, TableSkeleton } from '@/components/ui/primitives';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -182,11 +190,11 @@ function FilterDropdown({
   return createPortal(
     <div
       ref={ref}
-      style={{ position: 'fixed', top, left, zIndex: 9999 }}
-      className="w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 flex flex-col max-h-80"
+      style={{ position: 'fixed', top, left, zIndex: 9999, ['--origin' as string]: 'top left' }}
+      className="dropdown-card w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 flex flex-col max-h-80"
     >
-      <div className="flex items-center justify-between px-3 pb-2 border-b border-gray-100 mb-1 shrink-0">
-        <span className="text-xs font-semibold text-gray-400 tracking-wide">FILTRAR</span>
+      <div className="flex items-center justify-between px-3.5 pb-2 border-b border-gray-100 mb-1.5 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Filtrar</span>
         {active.size > 0 && (
           <button
             onClick={() => onChange(new Set())}
@@ -196,31 +204,31 @@ function FilterDropdown({
           </button>
         )}
       </div>
-      <div className="px-3 pb-2 border-b border-gray-100 shrink-0">
+      <div className="px-3.5 pb-2 border-b border-gray-100 shrink-0">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar..."
           autoFocus
-          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="w-full px-2.5 py-1.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
       </div>
       <div className="overflow-y-auto flex-1">
         {visible.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-gray-400">Sin coincidencias</p>
+          <p className="px-3.5 py-2 text-sm text-gray-400">Sin coincidencias</p>
         ) : (
           visible.map((v) => (
             <label
               key={v}
-              className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50 cursor-pointer"
+              className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer"
             >
               <input
                 type="checkbox"
-                className="rounded border-gray-300 text-blue-600 w-3.5 h-3.5"
+                className="rounded border-gray-300 text-blue-600 w-4 h-4"
                 checked={active.has(v)}
                 onChange={() => toggle(v)}
               />
-              <span className="text-xs text-gray-700 truncate">{v || '—'}</span>
+              <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
             </label>
           ))
         )}
@@ -431,8 +439,8 @@ function OrderForm({
   const lbl = 'block text-xs font-semibold text-gray-700 mb-1';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+    <div className="overlay fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
         {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <h2 className="text-base font-bold text-gray-900">
@@ -719,6 +727,7 @@ export default function RefaccionesPage() {
   // Form
   const [showForm, setShowForm] = useState(false);
   const [editOrder, setEditOrder] = useState<PartsOrder | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<PartsOrder | null>(null);
 
   const { query } = useSearch();
 
@@ -873,11 +882,14 @@ export default function RefaccionesPage() {
     });
   }
 
-  async function handleDelete(order: PartsOrder) {
-    if (!order.id) return;
-    if (!confirm(`¿Eliminar pedido de ${order.clientName}?`)) return;
+  function handleDelete(order: PartsOrder) {
+    setConfirmDelete(order);
+  }
+
+  async function handleDeleteConfirmed(order: PartsOrder) {
+    setConfirmDelete(null);
     try {
-      await deletePartsOrder(order.id);
+      await deletePartsOrder(order.id!);
       toast.success('Pedido eliminado');
     } catch {
       toast.error('Error al eliminar');
@@ -892,40 +904,37 @@ export default function RefaccionesPage() {
         hour: '2-digit',
         minute: '2-digit',
       })
-    : '—';
+    : '';
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <AppShell>
-      <div className="px-6 py-6 space-y-6 max-w-screen-2xl mx-auto">
+      <div className="px-6 py-7 space-y-6 max-w-screen-2xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Refacciones</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Última actualización: {lastUpdatedStr}
-            </p>
-          </div>
+        <PageHeader
+          title="Refacciones"
+          description={lastUpdatedStr ? `Última actualización: ${lastUpdatedStr}` : undefined}
+        >
           <button
             onClick={() => { setEditOrder(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
           >
             <Plus size={16} />
             Nuevo pedido
           </button>
-        </div>
+        </PageHeader>
 
         {/* Filters bar */}
-        <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl border border-gray-200 px-5 py-3.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4 bg-white rounded-2xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] px-5 py-3.5">
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold text-gray-500 shrink-0">Desde</label>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -934,7 +943,7 @@ export default function RefaccionesPage() {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
           </div>
           {(dateFrom || dateTo) && (
@@ -955,7 +964,7 @@ export default function RefaccionesPage() {
                 key={s}
                 onClick={() => toggleStatus(s)}
                 className={cn(
-                  'px-2.5 py-1 rounded-full text-xs font-semibold border transition-all',
+                  'px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors',
                   statusFilter.has(s)
                     ? STATUS_COLORS[s]
                     : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300',
@@ -977,36 +986,12 @@ export default function RefaccionesPage() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium">Total pedidos</p>
-            <p className="text-3xl font-bold mt-1 text-blue-600">{kpis.total}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium">Total venta</p>
-            <p className="text-xl font-bold mt-1 text-green-600 leading-tight break-all">
-              {MXN.format(kpis.totalSales)}
-            </p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium">Entregados</p>
-            <p className="text-3xl font-bold mt-1 text-emerald-600">{kpis.entregados}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{kpis.entregadosPct}% del total</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium">Pendientes</p>
-            <p className="text-3xl font-bold mt-1 text-amber-600">{kpis.pendientes}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{kpis.pendientesPct}% del total</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium">Pedido especial</p>
-            <p className="text-3xl font-bold mt-1 text-violet-600">{kpis.especial}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{kpis.especialPct}% del total</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm">
-            <p className="text-xs text-gray-500 font-medium">Cancelados</p>
-            <p className="text-3xl font-bold mt-1 text-red-500">{kpis.cancelados}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{kpis.canceladosPct}% del total</p>
-          </div>
+          <StatCard label="Total pedidos" value={kpis.total} tone="accent" icon={<Package size={17} />} />
+          <StatCard label="Total venta" value={MXN.format(kpis.totalSales)} valueClassName="text-lg" tone="success" icon={<DollarSign size={17} />} />
+          <StatCard label="Entregados" value={kpis.entregados} sub={`${kpis.entregadosPct}% del total`} tone="success" icon={<CircleCheck size={17} />} />
+          <StatCard label="Pendientes" value={kpis.pendientes} sub={`${kpis.pendientesPct}% del total`} tone="warning" icon={<Clock size={17} />} />
+          <StatCard label="Pedido especial" value={kpis.especial} sub={`${kpis.especialPct}% de la venta`} tone="violet" icon={<Star size={17} />} />
+          <StatCard label="Cancelados" value={kpis.cancelados} sub={`${kpis.canceladosPct}% del total`} tone="danger" icon={<XCircle size={17} />} />
         </div>
 
         {/* Table section */}
@@ -1056,10 +1041,10 @@ export default function RefaccionesPage() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
             {loading ? (
-              <div className="flex justify-center items-center h-48">
-                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="p-4">
+                <TableSkeleton rows={8} cols={8} />
               </div>
             ) : (
               <table
@@ -1076,17 +1061,17 @@ export default function RefaccionesPage() {
                 </colgroup>
 
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-gray-50/70 border-b border-gray-200">
                     {COLUMNS.map((col) => {
                       const hasFilter = (colFilters[col.key]?.size ?? 0) > 0;
                       return (
                         <th
                           key={col.key}
-                          className="relative select-none text-left px-3 py-2.5 text-xs font-semibold text-gray-600 whitespace-nowrap border-r border-gray-200 last:border-r-0"
+                          className="relative select-none text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 whitespace-nowrap border-r border-gray-200 last:border-r-0"
                         >
                           <div className="flex items-center gap-1.5 pr-5">
                             <button
-                              className="flex items-center gap-1 hover:text-gray-900 transition-colors"
+                              className="flex items-center gap-1 hover:text-gray-800 transition-colors"
                               onClick={() => handleSort(col.key)}
                             >
                               {col.label}
@@ -1128,7 +1113,7 @@ export default function RefaccionesPage() {
                         </th>
                       );
                     })}
-                    <th className="px-3 py-2.5 text-xs font-semibold text-gray-600 text-center bg-gray-50">
+                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 text-center bg-gray-50/70">
                       Acciones
                     </th>
                   </tr>
@@ -1156,27 +1141,27 @@ export default function RefaccionesPage() {
                           {isoToDisplay(order.captureDate)}
                         </td>
                         <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.capturedBy || '—'}
+                          {order.capturedBy}
                         </td>
                         <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.requestedBy || '—'}
+                          {order.requestedBy}
                         </td>
                         <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.carModel || '—'}
+                          {order.carModel}
                         </td>
                         <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
-                          {order.vin || '—'}
+                          {order.vin}
                         </td>
                         <td className="px-3 py-2.5 text-xs font-semibold text-gray-800 border-r border-gray-100 truncate">
                           {order.clientName}
                         </td>
                         <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap">
-                          {order.clientPhone || '—'}
+                          {order.clientPhone}
                         </td>
                         <td className="px-3 py-2.5 border-r border-gray-100 text-center">
                           {order.invoice
                             ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200">Sí</span>
-                            : <span className="text-gray-300 text-xs">—</span>
+                            : <span className="text-gray-300">&nbsp;</span>
                           }
                         </td>
                         <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
@@ -1192,7 +1177,7 @@ export default function RefaccionesPage() {
                           {MXN.format(order.price ?? 0)}
                         </td>
                         <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 truncate">
-                          {order.location || '—'}
+                          {order.location}
                         </td>
                         <td className="px-3 py-2.5 border-r border-gray-100">
                           <span
@@ -1258,8 +1243,8 @@ export default function RefaccionesPage() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Donut chart */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Resumen por estado</h3>
+          <Card className="px-5 py-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-4">Resumen por estado</h3>
             <div className="flex flex-col items-center gap-4">
               <DonutChart data={chartData} />
               <div className="w-full space-y-2">
@@ -1272,16 +1257,16 @@ export default function RefaccionesPage() {
                       />
                       <span className="text-gray-600">{d.label}</span>
                     </div>
-                    <span className="font-semibold text-gray-800">{d.value}</span>
+                    <span className="font-semibold text-gray-800 tabular">{d.value}</span>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Horizontal bar chart */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Pedidos por estado</h3>
+          <Card className="px-5 py-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-4">Pedidos por estado</h3>
             <div className="space-y-4">
               {chartData.map((d) => {
                 const max = Math.max(...chartData.map((x) => x.value), 1);
@@ -1290,46 +1275,46 @@ export default function RefaccionesPage() {
                   <div key={d.label}>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-xs text-gray-600">{d.label}</span>
-                      <span className="text-xs font-semibold text-gray-800">{d.value}</span>
+                      <span className="text-xs font-semibold text-gray-800 tabular">{d.value}</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-4">
+                    <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
                       <div
-                        className="h-4 rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, backgroundColor: d.color }}
+                        className="h-full rounded-full origin-left transform-gpu transition-transform duration-300 ease-out"
+                        style={{ width: '100%', transform: `scaleX(${pct / 100})`, backgroundColor: d.color }}
                       />
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </Card>
 
           {/* Top Clientes */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Clientes</h3>
+          <Card className="px-5 py-5">
+            <h3 className="text-sm font-semibold text-gray-800 mb-4">Top Clientes</h3>
             {topClients.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-8">Sin datos</p>
             ) : (
               <div className="divide-y divide-gray-50">
                 {topClients.map((c, i) => (
                   <div key={c.name} className="flex items-center gap-3 py-2">
-                    <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0">
+                    <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0 tabular">
                       {i + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-gray-800 truncate">{c.name}</p>
-                      <p className="text-[10px] text-gray-400">
+                      <p className="text-[11px] text-gray-500">
                         {c.count} pedido{c.count !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <span className="text-xs font-semibold text-gray-700 shrink-0">
+                    <span className="text-xs font-semibold text-gray-700 shrink-0 tabular">
                       {MXN.format(c.total)}
                     </span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       </div>
 
@@ -1338,6 +1323,16 @@ export default function RefaccionesPage() {
           initial={editOrder ?? undefined}
           onClose={() => { setShowForm(false); setEditOrder(null); }}
           onSaved={() => { setShowForm(false); setEditOrder(null); }}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="¿Eliminar pedido?"
+          message={`${confirmDelete.clientName} · ${confirmDelete.partNumber}`}
+          detail={confirmDelete.description ? confirmDelete.description : undefined}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => handleDeleteConfirmed(confirmDelete)}
         />
       )}
     </AppShell>

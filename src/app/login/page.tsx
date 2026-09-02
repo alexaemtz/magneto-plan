@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   if (user && !authLoading && active === false) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a1a2e] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[#131627] px-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center">
           <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <Wrench size={26} className="text-amber-600" />
@@ -65,14 +65,20 @@ export default function LoginPage() {
   const busy = loading || googleLoading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1a1a2e] px-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center bg-[#131627] px-4 overflow-hidden">
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="absolute -top-40 -left-40 w-[480px] h-[480px] rounded-full bg-blue-600/20 blur-[120px]" />
+        <div className="absolute -bottom-48 -right-32 w-[520px] h-[520px] rounded-full bg-indigo-600/10 blur-[130px]" />
+      </div>
+
+      <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center mb-4 shadow-xl shadow-blue-900/50">
-            <Wrench size={32} className="text-white" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4 shadow-xl shadow-blue-900/50 ring-1 ring-white/10">
+            <Wrench size={30} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Magneto Plan</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Magneto Plan</h1>
           <p className="text-blue-300 text-sm mt-1">Postventa BYD Hermosillo</p>
         </div>
 
@@ -85,7 +91,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={busy}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 disabled:opacity-60 transition-all mb-5"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 hover:border-gray-300 disabled:opacity-60 transition-colors mb-5"
           >
             {googleLoading ? (
               <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />

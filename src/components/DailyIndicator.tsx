@@ -71,11 +71,11 @@ export default function DailyIndicatorTable({ indicator, readOnly = false, onSav
   const inputCls = 'w-16 text-center rounded border border-gray-300 bg-white text-gray-900 px-1 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)] overflow-hidden">
       {/* Header */}
-      <div className="bg-[#1a1a2e] text-white px-4 py-3">
+      <div className="bg-[#131627] text-white px-4 py-3">
         <p className="text-xs font-semibold uppercase tracking-wider opacity-60">POSTVENTA BYD HERMOSILLO</p>
-        <p className="text-sm font-bold mt-0.5">{data.date}</p>
+        <p className="text-sm font-bold mt-0.5 tabular">{data.date}</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -152,7 +152,7 @@ export default function DailyIndicatorTable({ indicator, readOnly = false, onSav
             </tr>
 
             {/* Ingresos del día */}
-            <tr className="bg-[#1a1a2e] text-white">
+            <tr className="bg-[#131627] text-white">
               <td className="border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-300">
                 Ingresos del día
               </td>
