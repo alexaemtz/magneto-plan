@@ -101,11 +101,13 @@ export function cn(...classes: (string | undefined | false | null)[]): string {
 
 /**
  * Normalizes a proper-name string: trims edges, collapses internal spaces,
- * and capitalizes the first letter of each word.
+ * and capitalizes the first letter of each word (Unicode-safe).
  */
 export function normalizeName(s: string): string {
   return s
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .split(' ')
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(' ');
 }

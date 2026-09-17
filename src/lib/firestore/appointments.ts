@@ -9,6 +9,7 @@ import {
   onSnapshot,
   query,
   where,
+  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -101,4 +102,12 @@ export async function getAppointmentsByMonth(year: number, month: number, force 
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
   cacheSet(key, result);
   return result;
+}
+
+// ── Fetch all appointments (for general search) ──────────────────────────────
+
+export async function getAllAppointments(): Promise<Appointment[]> {
+  const q = query(collection(db, COL), orderBy('date', 'desc'), orderBy('startTime', 'asc'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Appointment));
 }

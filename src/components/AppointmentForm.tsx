@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Appointment, ServiceType, Ramp, AppointmentStatus, Advisor, CarModel, Tecnico } from '@/types';
-import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes } from '@/lib/utils';
+import { SERVICE_LABELS, generateTimeSlots, formatRamp, timeToMinutes, normalizeName } from '@/lib/utils';
 import { findConflict, findNextSlot } from '@/lib/scheduling';
 import { createAppointment, updateAppointment } from '@/lib/firestore/appointments';
 import { createPendingCase } from '@/lib/firestore/pendingCases';
@@ -82,7 +82,12 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
       toast.error('Completa los campos requeridos');
       return;
     }
-    let saveForm = { ...form };
+    let saveForm = {
+      ...form,
+      clientName:   normalizeName(form.clientName ?? ''),
+      serialNumber: (form.serialNumber ?? '').toUpperCase(),
+      workOrder:    (form.workOrder ?? '').toUpperCase(),
+    };
     const conflict = findConflict(existingAppointments, saveForm, initial?.id);
     if (conflict) {
       const next = findNextSlot(existingAppointments, saveForm, initial?.id);
