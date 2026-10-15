@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 /* ── Card container ──────────────────────────────────────────────────────────
@@ -18,7 +18,7 @@ export function Card({
   return (
     <Tag
       className={cn(
-        'bg-white rounded-2xl border border-gray-200/80 shadow-[0_1px_2px_rgba(17,24,39,0.04)]',
+        'bg-surface rounded-2xl border border-line shadow-[var(--shadow-card)]',
         className,
       )}
     >
@@ -43,7 +43,7 @@ export function PageHeader({
     <div className="flex items-start justify-between flex-wrap gap-x-4 gap-y-3">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-blue-600 mb-1.5">
+          <p className="text-xs font-semibold text-accent-700 mb-1.5">
             {eyebrow}
           </p>
         )}
@@ -73,31 +73,30 @@ export function StatCard({
   value: React.ReactNode;
   sub?: React.ReactNode;
   icon?: React.ReactNode;
-  tone?: 'default' | 'accent' | 'success' | 'warning' | 'danger' | 'violet';
+  tone?: 'default' | 'accent' | 'success' | 'warning' | 'danger';
   valueClassName?: string;
   /** Only pass this when there is a real comparison value — never fabricate a trend. */
   trend?: { direction: 'up' | 'down'; label: string };
 }) {
   const ICON_BG: Record<NonNullable<typeof tone>, string> = {
-    default: 'bg-gray-400',
-    accent:  'bg-blue-500',
+    default: 'bg-slate-400',
+    accent:  'bg-accent-500',
     success: 'bg-emerald-500',
     warning: 'bg-amber-500',
     danger:  'bg-red-500',
-    violet:  'bg-violet-500',
   };
 
   return (
-    <div className="bg-white rounded-[28px] border border-gray-200/70 shadow-[0_1px_3px_rgba(17,24,39,0.06)] px-5 py-5">
+    <div className="bg-surface rounded-2xl border border-line shadow-[var(--shadow-card)] px-5 py-5">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 pt-1.5">{label}</p>
+        <p className="text-xs font-medium text-gray-500">{label}</p>
         {icon && (
-          <span className={cn('w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0', ICON_BG[tone])}>
+          <span className={cn('w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0', ICON_BG[tone])}>
             {icon}
           </span>
         )}
       </div>
-      <p className={cn('text-[26px] font-bold leading-none tracking-tight text-gray-900 tabular mt-3.5', valueClassName)}>
+      <p className={cn('text-[26px] font-bold leading-none tracking-tight text-gray-900 tabular mt-3', valueClassName)}>
         {value}
       </p>
       {(trend || sub) && (
@@ -111,7 +110,7 @@ export function StatCard({
               {trend.label}
             </span>
           )}
-          {sub && <span className="text-xs text-gray-400 truncate">{sub}</span>}
+          {sub && <span className="text-xs text-gray-500 truncate">{sub}</span>}
         </div>
       )}
     </div>
@@ -163,12 +162,12 @@ export function EmptyState({
   return (
     <Card className={cn('px-6 py-14 flex flex-col items-center justify-center text-center', className)}>
       {icon && (
-        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 mb-4">
+        <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500 mb-4">
           {icon}
         </div>
       )}
       <p className="text-sm font-semibold text-gray-700">{title}</p>
-      {description && <p className="text-sm text-gray-400 mt-1 max-w-sm">{description}</p>}
+      {description && <p className="text-sm text-gray-500 mt-1 max-w-sm">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </Card>
   );

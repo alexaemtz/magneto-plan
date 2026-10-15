@@ -12,7 +12,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { normalizeName } from '@/lib/utils';
-import { Play, CheckCircle2, Loader2, Database } from 'lucide-react';
+import { Play, CheckCircle, CircleNotch, Database } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { PageHeader, Card } from '@/components/ui/primitives';
 
@@ -189,7 +189,7 @@ export default function NormalizacionPage() {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800">{col.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{col.description}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{col.description}</p>
 
                   {s.status === 'done' && (
                     <p className="text-xs text-emerald-600 font-medium mt-1.5">
@@ -209,9 +209,9 @@ export default function NormalizacionPage() {
                     bg-gray-100 text-gray-700 hover:bg-gray-200"
                 >
                   {s.status === 'running' ? (
-                    <Loader2 size={14} className="animate-spin" />
+                    <CircleNotch size={14} className="animate-spin" />
                   ) : s.status === 'done' ? (
-                    <CheckCircle2 size={14} className="text-emerald-500" />
+                    <CheckCircle size={14} className="text-emerald-500" />
                   ) : (
                     <Play size={14} />
                   )}
@@ -227,12 +227,12 @@ export default function NormalizacionPage() {
           <button
             onClick={runAll}
             disabled={anyRunning || runningAll}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-colors disabled:opacity-50 shadow-lg shadow-accent-600/20"
           >
             {runningAll ? (
-              <Loader2 size={15} className="animate-spin" />
+              <CircleNotch size={15} className="animate-spin" />
             ) : allDone ? (
-              <CheckCircle2 size={15} />
+              <CheckCircle size={15} />
             ) : (
               <Play size={15} />
             )}
@@ -240,7 +240,7 @@ export default function NormalizacionPage() {
           </button>
         </div>
 
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500">
           Esta página solo es visible para administradores. La operación puede tardar algunos
           segundos dependiendo del volumen de registros.
         </p>

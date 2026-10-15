@@ -7,28 +7,28 @@ import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/components/UserProfilePanel';
 import UserProfilePanel from '@/components/UserProfilePanel';
 import {
-  LayoutDashboard,
-  CalendarDays,
-  ClipboardList,
-  Settings,
-  LogOut,
+  SquaresFour,
+  CalendarDots,
+  ClipboardText,
+  Gear,
+  SignOut,
   Wrench,
-  ChevronLeft,
-  ChevronRight,
+  CaretLeft,
+  CaretRight,
   ShieldCheck,
   Package,
-  Table2,
-} from 'lucide-react';
+  Table,
+} from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 const NAV = [
-  { href: '/',                 label: 'Dashboard',        icon: LayoutDashboard },
-  { href: '/gantt',            label: 'Magneto Plan',     icon: CalendarDays    },
-  { href: '/citas',            label: 'Citas',            icon: Table2          },
-  { href: '/casos-pendientes', label: 'Casos Pendientes', icon: ClipboardList   },
+  { href: '/',                 label: 'Dashboard',        icon: SquaresFour },
+  { href: '/gantt',            label: 'Magneto Plan',     icon: CalendarDots    },
+  { href: '/citas',            label: 'Citas',            icon: Table          },
+  { href: '/casos-pendientes', label: 'Casos Pendientes', icon: ClipboardText   },
   { href: '/refacciones',      label: 'Refacciones',      icon: Package         },
-  { href: '/configuracion',    label: 'Configuración',    icon: Settings        },
+  { href: '/configuracion',    label: 'Configuración',    icon: Gear        },
 ];
 
 interface Props {
@@ -52,7 +52,7 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
     <>
       <aside
         className={cn(
-          'relative flex flex-col shrink-0 min-h-screen bg-[#131627] text-white',
+          'relative flex flex-col shrink-0 h-full bg-ink text-white',
           'transition-[width,box-shadow] duration-300 ease-out',
           collapsed ? 'w-16' : 'w-64',
         )}
@@ -63,12 +63,12 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
           aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
           className="absolute -right-3 top-[26px] z-40 flex h-6 w-6 items-center justify-center rounded-full bg-[#1e2237] border border-white/15 text-gray-300 hover:text-white shadow-lg shadow-black/30 transition-colors"
         >
-          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+          {collapsed ? <CaretRight size={12} /> : <CaretLeft size={12} />}
         </button>
 
         {/* Logo */}
         <div className="flex h-[72px] items-center border-b border-white/[0.07] px-3.5 overflow-hidden">
-          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/40">
+          <div className="w-9 h-9 rounded-[10px] bg-accent-600 flex items-center justify-center shrink-0">
             <Wrench size={18} className="text-white" />
           </div>
           <div className={cn(
@@ -76,12 +76,12 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
             collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100',
           )}>
             <p className="text-sm font-bold leading-tight whitespace-nowrap tracking-tight">Magneto Plan</p>
-            <p className="text-xs text-blue-300 leading-tight whitespace-nowrap">BYD Hermosillo</p>
+            <p className="text-xs text-accent-300 leading-tight whitespace-nowrap">BYD Hermosillo</p>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2.5 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-1">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== '/' && pathname.startsWith(href));
             return (
@@ -90,18 +90,21 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
                 href={href}
                 title={collapsed ? label : undefined}
                 className={cn(
-                  'group flex items-center rounded-[10px] text-sm font-medium transition-colors duration-150',
+                  'group relative flex items-center rounded-[10px] text-sm font-medium transition-colors duration-150',
                   'px-3 py-2.5 gap-3',
                   active
-                    ? 'bg-white/[0.08] text-white ring-1 ring-inset ring-white/10'
-                    : 'text-gray-400 hover:bg-white/[0.05] hover:text-gray-100',
+                    ? 'bg-white/[0.05] text-white'
+                    : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-100',
                 )}
               >
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-accent-400" />
+                )}
                 <Icon
                   size={18}
                   className={cn(
                     'shrink-0 transition-colors',
-                    active ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300',
+                    active ? 'text-accent-400' : 'text-gray-500 group-hover:text-gray-300',
                   )}
                 />
                 <span className={cn(
@@ -120,24 +123,27 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
                 'overflow-hidden transition-[max-width,opacity] duration-300 ease-out px-3 pt-5 pb-1',
                 collapsed ? 'max-w-0 opacity-0' : 'opacity-100',
               )}>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Admin</p>
+                <p className="text-xs font-semibold text-gray-500">Admin</p>
               </div>
               <Link
                 href="/admin/usuarios"
                 title={collapsed ? 'Usuarios' : undefined}
                 className={cn(
-                  'group flex items-center rounded-[10px] text-sm font-medium transition-colors duration-150',
+                  'group relative flex items-center rounded-[10px] text-sm font-medium transition-colors duration-150',
                   'px-3 py-2.5 gap-3',
                   pathname.startsWith('/admin')
-                    ? 'bg-white/[0.08] text-white ring-1 ring-inset ring-white/10'
-                    : 'text-gray-400 hover:bg-white/[0.05] hover:text-gray-100',
+                    ? 'bg-white/[0.05] text-white'
+                    : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-100',
                 )}
               >
+                {pathname.startsWith('/admin') && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-accent-400" />
+                )}
                 <ShieldCheck
                   size={18}
                   className={cn(
                     'shrink-0 transition-colors',
-                    pathname.startsWith('/admin') ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300',
+                    pathname.startsWith('/admin') ? 'text-accent-400' : 'text-gray-500 group-hover:text-gray-300',
                   )}
                 />
                 <span className={cn(
@@ -187,7 +193,7 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
             title={collapsed ? 'Cerrar sesión' : undefined}
             className="flex items-center gap-3 w-full px-3 py-2 rounded-[10px] text-sm font-medium text-gray-500 hover:bg-white/[0.05] hover:text-gray-200 transition-colors duration-150"
           >
-            <LogOut size={18} className="shrink-0" />
+            <SignOut size={18} className="shrink-0" />
             <span className={cn(
               'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300 ease-out',
               collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100',

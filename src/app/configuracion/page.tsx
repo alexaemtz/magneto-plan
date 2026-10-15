@@ -6,13 +6,13 @@ import { Advisor, CarModel, Tecnico, UserProfile } from '@/types';
 import { getAdvisors, createAdvisor, updateAdvisor, getCarModels, createCarModel, updateCarModel, getTecnicos, createTecnico, updateTecnico } from '@/lib/firestore/catalog';
 import { getUsersList, setUserRole, setUserActive } from '@/lib/firestore/users';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Pencil, Check, X, Upload, Shield, ShieldOff } from 'lucide-react';
+import { Plus, PencilSimple, Check, X, UploadSimple, Shield, ShieldSlash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { PageHeader, Card, TableSkeleton } from '@/components/ui/primitives';
 
 type EditState = { id: string; name: string } | null;
 
-const inputCls = 'flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400';
+const inputCls = 'flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-400';
 
 // ── Bulk import modal ────────────────────────────────────────────────────────
 function BulkImportModal({
@@ -63,7 +63,7 @@ function BulkImportModal({
             <textarea
               autoFocus
               rows={8}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none font-mono"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-400 resize-none font-mono"
               placeholder={'Nombre 1\nNombre 2\nNombre 3\n...'}
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -73,11 +73,11 @@ function BulkImportModal({
           {preview.length > 0 && (
             <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-xs space-y-1">
               <p className="font-semibold text-gray-700">
-                {preview.length} detectados · <span className="text-green-700">{newOnes.length} nuevos</span>
-                {dupes.length > 0 && <span className="text-amber-600"> · {dupes.length} ya existen (se omitirán)</span>}
+                {preview.length} detectados, <span className="text-green-700">{newOnes.length} nuevos</span>
+                {dupes.length > 0 && <span className="text-amber-600">, {dupes.length} ya existen (se omitirán)</span>}
               </p>
               {newOnes.slice(0, 6).map((n) => <p key={n} className="text-gray-600">· {n}</p>)}
-              {newOnes.length > 6 && <p className="text-gray-400">…y {newOnes.length - 6} más</p>}
+              {newOnes.length > 6 && <p className="text-gray-500">…y {newOnes.length - 6} más</p>}
             </div>
           )}
         </div>
@@ -89,9 +89,9 @@ function BulkImportModal({
           <button
             onClick={handleImport}
             disabled={importing || newOnes.length === 0}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 disabled:opacity-60 transition-colors"
           >
-            <Upload size={15} />
+            <UploadSimple size={15} />
             {importing ? 'Importando...' : `Importar ${newOnes.length}`}
           </button>
         </div>
@@ -144,16 +144,16 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="font-semibold text-gray-800">{title}</h2>
-            <p className="text-xs text-gray-400 mt-0.5 tabular">{items.length} registros</p>
+            <p className="text-xs text-gray-500 mt-0.5 tabular">{items.length} registros</p>
           </div>
           {!readOnly && (
             <div className="flex gap-2">
               <button onClick={() => setShowImport(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors">
-                <Upload size={13} /> Importar lista
+                <UploadSimple size={13} /> Importar lista
               </button>
               <button onClick={() => { setAdding(true); setEdit(null); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-600 text-white text-xs font-semibold hover:bg-accent-700 transition-colors">
                 <Plus size={13} /> Agregar
               </button>
             </div>
@@ -161,7 +161,7 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
         </div>
 
         {adding && !readOnly && (
-          <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-blue-50/40">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-accent-50/40">
             <input
               autoFocus
               className={inputCls}
@@ -177,7 +177,7 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
 
         <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto flex-1">
           {items.length === 0 && (
-            <p className="text-center text-gray-400 text-sm py-10">
+            <p className="text-center text-gray-500 text-sm py-10">
               {readOnly ? 'Sin registros' : 'Sin registros. Usa "Importar lista" para cargar varios a la vez'}
             </p>
           )}
@@ -197,14 +197,14 @@ function CatalogSection<T extends { id?: string; name: string; active: boolean }
                 </>
               ) : (
                 <>
-                  <span className={`flex-1 text-sm font-medium ${item.active ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
+                  <span className={`flex-1 text-sm font-medium ${item.active ? 'text-gray-800' : 'text-gray-500 line-through'}`}>
                     {item.name}
                   </span>
                   {!readOnly && (
                     <>
                       <button onClick={() => setEdit({ id: item.id!, name: item.name })}
                         className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
-                        <Pencil size={13} />
+                        <PencilSimple size={13} />
                       </button>
                       <button
                         onClick={() => onToggle(item)}
@@ -288,37 +288,37 @@ function UsersSection({ currentUid }: { currentUid: string }) {
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50/60 to-transparent">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <div>
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Shield size={15} className="text-violet-600" />
+            <Shield size={15} className="text-accent-600" />
             Usuarios y permisos
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">{users.length} registros · solo visible para administradores</p>
+          <p className="text-xs text-gray-500 mt-0.5">{users.length} registros, visibles solo para administradores</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
           {users.length === 0 && (
-            <p className="text-center text-gray-400 text-sm py-10">Sin usuarios registrados</p>
+            <p className="text-center text-gray-500 text-sm py-10">Sin usuarios registrados</p>
           )}
           {users.map((u) => {
             const isSelf = u.uid === currentUid;
             return (
               <div key={u.uid} className="flex items-center gap-3 px-5 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${u.active ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
+                  <p className={`text-sm font-medium truncate ${u.active ? 'text-gray-800' : 'text-gray-500 line-through'}`}>
                     {u.email}
                   </p>
                   {u.displayName && (
-                    <p className="text-xs text-gray-400 truncate">{u.displayName}</p>
+                    <p className="text-xs text-gray-500 truncate">{u.displayName}</p>
                   )}
-                  {isSelf && <p className="text-xs text-purple-500 font-medium">Tú</p>}
+                  {isSelf && <p className="text-xs text-accent-600 font-medium">Tú</p>}
                 </div>
 
                 {/* Rol */}
@@ -328,11 +328,11 @@ function UsersSection({ currentUid }: { currentUid: string }) {
                   title={isSelf ? 'No puedes cambiar tu propio rol' : `Cambiar a ${u.role === 'admin' ? 'Usuario' : 'Administrador'}`}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                     u.role === 'admin'
-                      ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-700'
+                      ? 'bg-accent-100 text-accent-700 hover:bg-accent-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-accent-100 hover:text-accent-700'
                   }`}
                 >
-                  {u.role === 'admin' ? <Shield size={11} /> : <ShieldOff size={11} />}
+                  {u.role === 'admin' ? <Shield size={11} /> : <ShieldSlash size={11} />}
                   {u.role === 'admin' ? 'Admin' : 'Usuario'}
                 </button>
 
@@ -343,8 +343,8 @@ function UsersSection({ currentUid }: { currentUid: string }) {
                   title={isSelf ? 'No puedes desactivarte a ti mismo' : (u.active ? 'Desactivar' : 'Activar')}
                   className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                     u.active
-                      ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600'
-                      : 'bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700'
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-gray-100 text-gray-500 hover:bg-emerald-100 hover:text-emerald-700'
                   }`}
                 >
                   {u.active ? 'Activo' : 'Inactivo'}
@@ -473,7 +473,7 @@ export default function ConfiguracionPage() {
           description={
             isAdmin
               ? 'Catálogos de asesores, técnicos y modelos de auto'
-              : 'Catálogos de asesores, técnicos y modelos de auto · solo lectura: contacta a un administrador para realizar cambios'
+              : 'Catálogos de asesores, técnicos y modelos de auto. Solo lectura: contacta a un administrador para realizar cambios'
           }
         />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
+import { Trash } from '@phosphor-icons/react';
 
 interface Props {
   title: string;
@@ -30,12 +30,12 @@ export default function ConfirmDialog({
       >
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <Trash2 size={16} className="text-red-600" />
+            <Trash size={16} className="text-red-600" />
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-gray-800">{title}</p>
             <p className="text-sm text-gray-500 mt-0.5">{message}</p>
-            {detail && <p className="text-xs text-gray-400 mt-0.5">{detail}</p>}
+            {detail && <p className="text-xs text-gray-500 mt-0.5">{detail}</p>}
           </div>
         </div>
         <div className="flex gap-3 justify-end pt-1">

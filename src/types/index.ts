@@ -86,6 +86,8 @@ export interface DailyIndicator {
   ingresosTotal: number;
 }
 
+export type PendingCaseStatus = 'PENDIENTE' | 'EN_PROCESO' | 'ENTREGADO';
+
 export interface PendingCase {
   id?: string;
   date: string; // YYYY-MM-DD
@@ -98,7 +100,7 @@ export interface PendingCase {
   partNumber?: string;
   stock?: string;
   workOrder?: string;
-  status: string;
+  status: PendingCaseStatus;
   createdAt?: string;
 }
 

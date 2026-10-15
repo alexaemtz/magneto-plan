@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Ban } from 'lucide-react';
+import { X, Prohibit } from '@phosphor-icons/react';
 import { Ramp, CarModel } from '@/types';
 import { getCarModels } from '@/lib/firestore/catalog';
 import { createRampBlock } from '@/lib/firestore/rampBlocks';
@@ -16,7 +16,7 @@ interface Props {
   onSaved: () => void;
 }
 
-const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400';
+const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-400';
 const labelCls = 'block text-xs font-semibold text-gray-700 mb-1';
 
 export default function RampBlockForm({ ramp, date, startTime, onClose, onSaved }: Props) {
@@ -63,7 +63,7 @@ export default function RampBlockForm({ ramp, date, startTime, onClose, onSaved 
       <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Ban size={18} className="text-red-500" />
+            <Prohibit size={18} className="text-red-500" />
             Inhabilitar {formatRamp(ramp)}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
@@ -100,7 +100,7 @@ export default function RampBlockForm({ ramp, date, startTime, onClose, onSaved 
             </div>
           </div>
           {!endDate && (
-            <p className="text-xs text-gray-400 -mt-2">
+            <p className="text-xs text-gray-500 -mt-2">
               Sin fecha de fin, la rampa queda inhabilitada hasta que la reactives manualmente.
             </p>
           )}

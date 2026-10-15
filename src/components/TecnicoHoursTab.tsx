@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Appointment } from '@/types';
 import { timeToMinutes, cn } from '@/lib/utils';
-import { Sun, Moon, CalendarOff, Users } from 'lucide-react';
+import { Sun, Moon, CalendarX, Users } from '@phosphor-icons/react';
 import { StatCard } from '@/components/ui/primitives';
 
 interface Props {
@@ -73,7 +73,7 @@ export default function TecnicoHoursTab({ appointments }: Props) {
   const cards = [
     { key: 'matutino', label: 'Turno Matutino', sub: '7:00 a 12:00', value: cardsData.matutino, icon: Sun, tone: 'warning' },
     { key: 'vespertino', label: 'Turno Vespertino', sub: '12:00 a 21:00', value: cardsData.vespertino, icon: Moon, tone: 'accent' },
-    { key: 'sinCita', label: 'Sin Cita', sub: 'Todo el día', value: cardsData.sinCita, icon: CalendarOff, tone: 'danger' },
+    { key: 'sinCita', label: 'Sin Cita', sub: 'Todo el día', value: cardsData.sinCita, icon: CalendarX, tone: 'danger' },
   ] as const;
 
   return (
@@ -81,13 +81,13 @@ export default function TecnicoHoursTab({ appointments }: Props) {
       {/* Filtro por técnico */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_1px_2px_rgba(17,24,39,0.04)] px-5 py-3.5 flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
-          <Users size={15} className="text-gray-400" />
+          <Users size={15} className="text-gray-500" />
           Técnico
         </div>
         <select
           value={selectedTecnico}
           onChange={(e) => setSelectedTecnico(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400"
         >
           <option value={ALL}>Todos (vista general)</option>
           {statsByTecnico.map((s) => (
@@ -97,7 +97,7 @@ export default function TecnicoHoursTab({ appointments }: Props) {
         {selectedTecnico !== ALL && (
           <button
             onClick={() => setSelectedTecnico(ALL)}
-            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+            className="text-xs font-medium text-accent-600 hover:text-accent-700"
           >
             Limpiar
           </button>
@@ -123,7 +123,7 @@ export default function TecnicoHoursTab({ appointments }: Props) {
         <h3 className="text-sm font-semibold text-gray-800 mb-4">Total de horas por técnico</h3>
 
         {statsByTecnico.length === 0 ? (
-          <div className="py-10 text-center text-gray-400 text-sm">
+          <div className="py-10 text-center text-gray-500 text-sm">
             No hay servicios completados para este día
           </div>
         ) : (
@@ -142,7 +142,7 @@ export default function TecnicoHoursTab({ appointments }: Props) {
                   onMouseLeave={() => setHovered(null)}
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <span className={cn('text-xs font-medium', isSelected ? 'text-blue-700' : 'text-gray-600')}>
+                    <span className={cn('text-xs font-medium', isSelected ? 'text-accent-700' : 'text-gray-600')}>
                       {s.tecnico}
                     </span>
                     <span className="text-xs font-semibold text-gray-800">{formatHours(s.total)} h</span>
@@ -151,7 +151,7 @@ export default function TecnicoHoursTab({ appointments }: Props) {
                     <div
                       className={cn(
                         'h-full rounded-full origin-left transform-gpu transition-transform duration-300 ease-out',
-                        isSelected ? 'bg-blue-600' : 'bg-blue-400',
+                        isSelected ? 'bg-accent-600' : 'bg-accent-400',
                       )}
                       style={{ width: '100%', transform: `scaleX(${pct / 100})` }}
                     />

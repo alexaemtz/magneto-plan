@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useState, useMemo } from 'react';
 import AppShell from '@/components/AppShell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { PartsOrder, PartsOrderStatus } from '@/types';
@@ -17,47 +16,35 @@ import { getCarModels } from '@/lib/firestore/catalog';
 import { CarModel } from '@/types';
 import {
   Plus,
-  Pencil,
-  Trash2,
+  PencilSimple,
+  Trash,
   X,
-  ChevronUp,
-  ChevronDown,
-  ChevronsUpDown,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
+  Funnel,
+  CaretLeft,
+  CaretRight,
   Package,
-  DollarSign,
-  CircleCheck,
+  CurrencyDollar,
+  CheckCircle,
   Clock,
   Star,
   XCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
-import { PageHeader, Card, StatCard, TableSkeleton } from '@/components/ui/primitives';
+import { PageHeader, Card, StatCard } from '@/components/ui/primitives';
+import { DataTable, useDataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import {
+  PARTS_STATUS_LABELS as STATUS_LABELS,
+  PARTS_STATUS_COLORS as STATUS_COLORS,
+} from '@/lib/status';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 50;
 
-const STATUS_LABELS: Record<PartsOrderStatus, string> = {
-  PENDIENTE:       'Pendiente',
-  ENTREGADO:       'Entregado',
-  PEDIDO_ESPECIAL: 'Pedido especial',
-  CANCELADO:       'Cancelado',
-};
-
-const STATUS_COLORS: Record<PartsOrderStatus, string> = {
-  PENDIENTE:       'bg-amber-100 text-amber-700 border border-amber-300',
-  ENTREGADO:       'bg-emerald-100 text-emerald-700 border border-emerald-300',
-  PEDIDO_ESPECIAL: 'bg-violet-100 text-violet-700 border border-violet-300',
-  CANCELADO:       'bg-red-100 text-red-600 border border-red-300',
-};
-
 const STATUS_CHART_COLORS: Record<PartsOrderStatus, string> = {
   PENDIENTE:       '#f59e0b',
   ENTREGADO:       '#10b981',
-  PEDIDO_ESPECIAL: '#8b5cf6',
+  PEDIDO_ESPECIAL: '#0d7d6f',
   CANCELADO:       '#ef4444',
 };
 
@@ -87,7 +74,7 @@ type ColKey =
   | 'location'
   | 'status';
 
-const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
+const COLUMNS: DataTableColumn<ColKey>[] = [
   { key: 'captureDate',  label: 'Fecha captura', defaultWidth: 150 },
   { key: 'capturedBy',   label: 'Capturó',       defaultWidth: 140 },
   { key: 'requestedBy',  label: 'Solicitó',      defaultWidth: 140 },
@@ -138,121 +125,6 @@ type ItemRow = {
 
 function defaultItem(): ItemRow {
   return { partNumber: '', quantity: 1, description: '', price: 0, location: '', status: 'PENDIENTE' };
-}
-
-// ── FilterDropdown with search ────────────────────────────────────────────────
-
-type FilterAnchor = { col: ColKey; top: number; left: number };
-
-function FilterDropdown({
-  col,
-  top,
-  left,
-  orders,
-  active,
-  onClose,
-  onChange,
-}: {
-  col: ColKey;
-  top: number;
-  left: number;
-  orders: PartsOrder[];
-  active: Set<string>;
-  onClose: () => void;
-  onChange: (v: Set<string>) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [search, setSearch] = useState('');
-
-  const unique = useMemo(
-    () => [...new Set(orders.map((o) => getColValue(o, col)))].sort(),
-    [orders, col],
-  );
-
-  const visible = search.trim()
-    ? unique.filter((v) => v.toLowerCase().includes(search.toLowerCase()))
-    : unique;
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [onClose]);
-
-  function toggle(v: string) {
-    const next = new Set(active);
-    if (next.has(v)) next.delete(v); else next.add(v);
-    onChange(next);
-  }
-
-  return createPortal(
-    <div
-      ref={ref}
-      style={{ position: 'fixed', top, left, zIndex: 9999, ['--origin' as string]: 'top left' }}
-      className="dropdown-card w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 flex flex-col max-h-80"
-    >
-      <div className="flex items-center justify-between px-3.5 pb-2 border-b border-gray-100 mb-1.5 shrink-0">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Filtrar</span>
-        {active.size > 0 && (
-          <button
-            onClick={() => onChange(new Set())}
-            className="text-xs text-red-500 hover:text-red-700 font-medium"
-          >
-            Limpiar
-          </button>
-        )}
-      </div>
-      <div className="px-3.5 pb-2 border-b border-gray-100 shrink-0">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar..."
-          autoFocus
-          className="w-full px-2.5 py-1.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
-        />
-      </div>
-      <div className="overflow-y-auto flex-1">
-        {visible.length === 0 ? (
-          <p className="px-3.5 py-2 text-sm text-gray-400">Sin coincidencias</p>
-        ) : (
-          visible.map((v) => (
-            <label
-              key={v}
-              className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-blue-600 w-4 h-4"
-                checked={active.has(v)}
-                onChange={() => toggle(v)}
-              />
-              <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
-            </label>
-          ))
-        )}
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-// ── SortIcon ─────────────────────────────────────────────────────────────────
-
-function SortIcon({
-  col,
-  sortCol,
-  sortDir,
-}: {
-  col: ColKey;
-  sortCol: ColKey | null;
-  sortDir: 'asc' | 'desc' | null;
-}) {
-  if (sortCol !== col) return <ChevronsUpDown size={13} className="text-gray-300 shrink-0" />;
-  return sortDir === 'asc'
-    ? <ChevronUp size={13} className="text-blue-500 shrink-0" />
-    : <ChevronDown size={13} className="text-blue-500 shrink-0" />;
 }
 
 // ── DonutChart ───────────────────────────────────────────────────────────────
@@ -433,9 +305,9 @@ function OrderForm({
   }
 
   const inp =
-    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white';
+    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent-400 bg-white';
   const inpSm =
-    'w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white';
+    'w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-accent-400 bg-white';
   const lbl = 'block text-xs font-semibold text-gray-700 mb-1';
 
   return (
@@ -463,7 +335,7 @@ function OrderForm({
         >
           {/* ── Encabezado del pedido ── */}
           <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">
+            <p className="text-xs font-semibold text-gray-500 mb-3">
               Datos del pedido
             </p>
             <div className="grid grid-cols-2 gap-4">
@@ -546,7 +418,7 @@ function OrderForm({
                 <label className="flex items-center gap-3 cursor-pointer select-none mt-4">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400"
+                    className="w-4 h-4 rounded border-gray-300 text-accent-600 focus:ring-accent-400"
                     checked={header.invoice}
                     onChange={(e) => setH('invoice', e.target.checked)}
                   />
@@ -558,10 +430,10 @@ function OrderForm({
 
           {/* ── Piezas ── */}
           <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">
+            <p className="text-xs font-semibold text-gray-500 mb-3">
               {isEdit ? 'Pieza' : `Piezas (${items.length})`}
             </p>
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
+            <div className="overflow-x-auto scroll-slim rounded-xl border border-gray-200">
               <table className="table-fixed w-full min-w-[540px] border-collapse">
                 <colgroup>
                   <col style={{ width: '100px' }} />
@@ -663,7 +535,7 @@ function OrderForm({
               <button
                 type="button"
                 onClick={addItem}
-                className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-accent-600 hover:text-accent-800 transition-colors"
               >
                 <Plus size={13} />
                 Agregar pieza
@@ -685,7 +557,7 @@ function OrderForm({
             type="submit"
             form="order-form"
             disabled={saving}
-            className="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60"
+            className="px-5 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-colors disabled:opacity-60"
           >
             {saving
               ? 'Guardando...'
@@ -713,17 +585,6 @@ export default function RefaccionesPage() {
   const [dateTo, setDateTo] = useState('');
   const [statusFilter, setStatusFilter] = useState<Set<PartsOrderStatus>>(new Set());
 
-  // Table state
-  const [sortCol, setSortCol] = useState<ColKey | null>(null);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>(null);
-  const [colWidths, setColWidths] = useState<Record<ColKey, number>>(
-    () => Object.fromEntries(COLUMNS.map((c) => [c.key, c.defaultWidth])) as Record<ColKey, number>,
-  );
-  const [colFilters, setColFilters] = useState<Partial<Record<ColKey, Set<string>>>>({});
-  const [openFilter, setOpenFilter] = useState<FilterAnchor | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const resizeRef = useRef<{ col: ColKey; startX: number; startW: number } | null>(null);
-
   // Form
   const [showForm, setShowForm] = useState(false);
   const [editOrder, setEditOrder] = useState<PartsOrder | null>(null);
@@ -742,81 +603,28 @@ export default function RefaccionesPage() {
     return unsub;
   }, []);
 
-  // ── Column resize ────────────────────────────────────────────────────────
+  // ── Table: external (date/status) filters + unified controls ─────────────
 
-  useEffect(() => {
-    function onMove(ev: MouseEvent) {
-      if (!resizeRef.current) return;
-      const { col, startX, startW } = resizeRef.current;
-      setColWidths((prev) => ({ ...prev, [col]: Math.max(60, startW + ev.clientX - startX) }));
-    }
-    function onUp() { resizeRef.current = null; }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-  }, []);
-
-  function startResize(col: ColKey, e: React.MouseEvent) {
-    e.preventDefault();
-    resizeRef.current = { col, startX: e.clientX, startW: colWidths[col] };
-  }
-
-  function handleSort(col: ColKey) {
-    if (sortCol !== col) { setSortCol(col); setSortDir('asc'); }
-    else if (sortDir === 'asc') setSortDir('desc');
-    else { setSortCol(null); setSortDir(null); }
-  }
-
-  // ── Filtered + sorted + paginated ────────────────────────────────────────
-
-  const filtered = useMemo(() => {
-    let result = [...orders];
-
+  const preRows = useMemo(() => {
+    let result = orders;
     if (dateFrom) result = result.filter((o) => o.captureDate >= dateFrom);
     if (dateTo)   result = result.filter((o) => o.captureDate <= dateTo);
-
     if (statusFilter.size > 0) result = result.filter((o) => statusFilter.has(o.status));
-
-    const q = query.trim().toLowerCase();
-    if (q) {
-      result = result.filter((o) =>
-        [o.clientName, o.clientPhone, o.carModel, o.vin, o.partNumber, o.description, o.location, o.capturedBy, o.requestedBy, STATUS_LABELS[o.status]]
-          .some((v) => v?.toLowerCase().includes(q)),
-      );
-    }
-
-    for (const [col, vals] of Object.entries(colFilters) as [ColKey, Set<string>][]) {
-      if (vals.size > 0) result = result.filter((o) => vals.has(getColValue(o, col)));
-    }
-
-    if (sortCol && sortDir) {
-      if (sortCol === 'price') {
-        result.sort((a, b) =>
-          sortDir === 'asc' ? (a.price ?? 0) - (b.price ?? 0) : (b.price ?? 0) - (a.price ?? 0),
-        );
-      } else if (sortCol === 'quantity') {
-        result.sort((a, b) =>
-          sortDir === 'asc' ? (a.quantity ?? 0) - (b.quantity ?? 0) : (b.quantity ?? 0) - (a.quantity ?? 0),
-        );
-      } else {
-        result.sort((a, b) => {
-          const av = getColValue(a, sortCol);
-          const bv = getColValue(b, sortCol);
-          return sortDir === 'asc' ? av.localeCompare(bv, 'es') : bv.localeCompare(av, 'es');
-        });
-      }
-    }
-
     return result;
-  }, [orders, dateFrom, dateTo, statusFilter, query, colFilters, sortCol, sortDir]);
+  }, [orders, dateFrom, dateTo, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-  const pageRows   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const activeFilterCount = Object.values(colFilters).filter((s) => s && s.size > 0).length;
+  const table = useDataTable<PartsOrder, ColKey>({
+    rows: preRows,
+    columns: COLUMNS,
+    getValue: getColValue,
+    getRowKey: (o) => o.id ?? `${o.captureDate}-${o.partNumber}-${o.vin}`,
+    externalSearch: query,
+    pageSize: PAGE_SIZE,
+    getSortValue: (o, key) =>
+      key === 'price' || key === 'quantity' ? (o[key] ?? 0) : getColValue(o, key),
+  });
+
+  const filtered = table.filteredRows;
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
 
@@ -919,7 +727,7 @@ export default function RefaccionesPage() {
         >
           <button
             onClick={() => { setEditOrder(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 active:scale-[0.98] transition-all shadow-lg shadow-accent-600/20"
           >
             <Plus size={16} />
             Nuevo pedido
@@ -934,7 +742,7 @@ export default function RefaccionesPage() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -943,13 +751,13 @@ export default function RefaccionesPage() {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-accent-500/40"
             />
           </div>
           {(dateFrom || dateTo) && (
             <button
               onClick={() => { setDateFrom(''); setDateTo(''); }}
-              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-600"
             >
               <X size={12} /> Limpiar fechas
             </button>
@@ -976,7 +784,7 @@ export default function RefaccionesPage() {
             {statusFilter.size > 0 && (
               <button
                 onClick={() => setStatusFilter(new Set())}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-600"
               >
                 <X size={12} /> Todos
               </button>
@@ -987,258 +795,141 @@ export default function RefaccionesPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatCard label="Total pedidos" value={kpis.total} tone="accent" icon={<Package size={17} />} />
-          <StatCard label="Total venta" value={MXN.format(kpis.totalSales)} valueClassName="text-lg" tone="success" icon={<DollarSign size={17} />} />
-          <StatCard label="Entregados" value={kpis.entregados} sub={`${kpis.entregadosPct}% del total`} tone="success" icon={<CircleCheck size={17} />} />
+          <StatCard label="Total venta" value={MXN.format(kpis.totalSales)} valueClassName="text-lg" tone="success" icon={<CurrencyDollar size={17} />} />
+          <StatCard label="Entregados" value={kpis.entregados} sub={`${kpis.entregadosPct}% del total`} tone="success" icon={<CheckCircle size={17} />} />
           <StatCard label="Pendientes" value={kpis.pendientes} sub={`${kpis.pendientesPct}% del total`} tone="warning" icon={<Clock size={17} />} />
-          <StatCard label="Pedido especial" value={kpis.especial} sub={`${kpis.especialPct}% de la venta`} tone="violet" icon={<Star size={17} />} />
+          <StatCard label="Pedido especial" value={kpis.especial} sub={`${kpis.especialPct}% de la venta`} tone="accent" icon={<Star size={17} />} />
           <StatCard label="Cancelados" value={kpis.cancelados} sub={`${kpis.canceladosPct}% del total`} tone="danger" icon={<XCircle size={17} />} />
         </div>
 
         {/* Table section */}
-        <div className="space-y-2">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              {activeFilterCount > 0 && (
-                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                  <Filter size={11} />
-                  {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''}
+        <DataTable<PartsOrder, ColKey>
+          controls={table}
+          loading={loading}
+          actionsWidth={ACTIONS_W}
+          rowClassName={() => 'hover:bg-accent-50/40'}
+          empty={orders.length === 0 ? 'No hay pedidos registrados' : 'Sin resultados para los filtros aplicados'}
+          renderToolbar={(t) => (
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                {t.activeFilterCount > 0 && (
+                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-semibold">
+                    <Funnel size={11} />
+                    {t.activeFilterCount} filtro{t.activeFilterCount > 1 ? 's' : ''}
+                    <button onClick={t.clearFilters} className="ml-1 hover:text-accent-900">
+                      <X size={11} />
+                    </button>
+                  </span>
+                )}
+                <span className="text-xs text-gray-500 tabular">
+                  {t.filteredRows.length > 0
+                    ? `${(t.safePage - 1) * PAGE_SIZE + 1}–${Math.min(t.safePage * PAGE_SIZE, t.filteredRows.length)} de ${t.filteredRows.length}`
+                    : '0 registros'}
+                </span>
+              </div>
+              {t.totalPages > 1 && (
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setColFilters({})}
-                    className="ml-1 hover:text-blue-900"
+                    onClick={() => t.setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={t.currentPage === 1}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
                   >
-                    <X size={11} />
+                    <CaretLeft size={16} className="text-gray-600" />
                   </button>
-                </span>
+                  <span className="text-xs font-medium text-gray-600 px-2 font-mono">
+                    {t.safePage} / {t.totalPages}
+                  </span>
+                  <button
+                    onClick={() => t.setCurrentPage((p) => Math.min(t.totalPages, p + 1))}
+                    disabled={t.currentPage === t.totalPages}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
+                  >
+                    <CaretRight size={16} className="text-gray-600" />
+                  </button>
+                </div>
               )}
-              <span className="text-xs text-gray-400">
-                {filtered.length > 0
-                  ? `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, filtered.length)} de ${filtered.length}`
-                  : '0 registros'}
-              </span>
             </div>
-            {totalPages > 1 && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
-                >
-                  <ChevronLeft size={16} className="text-gray-600" />
-                </button>
-                <span className="text-xs font-medium text-gray-600 px-2">
-                  {safePage} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight size={16} className="text-gray-600" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
-            {loading ? (
-              <div className="p-4">
-                <TableSkeleton rows={8} cols={8} />
-              </div>
-            ) : (
-              <table
-                className="table-fixed border-collapse w-full"
-                style={{
-                  minWidth: COLUMNS.reduce((s, c) => s + colWidths[c.key], 0) + ACTIONS_W,
-                }}
+          )}
+          renderCell={(order, key) => {
+            switch (key) {
+              case 'captureDate':
+                return isoToDisplay(order.captureDate);
+              case 'capturedBy':
+                return order.capturedBy;
+              case 'requestedBy':
+                return order.requestedBy;
+              case 'carModel':
+                return order.carModel;
+              case 'vin':
+                return <span className="font-mono text-gray-600">{order.vin}</span>;
+              case 'clientName':
+                return <span className="font-semibold text-gray-800">{order.clientName}</span>;
+              case 'clientPhone':
+                return order.clientPhone;
+              case 'invoice':
+                return order.invoice
+                  ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-100 text-accent-700 border border-accent-200">Sí</span>
+                  : <span className="text-gray-300">&nbsp;</span>;
+              case 'partNumber':
+                return <span className="font-mono text-gray-600">{order.partNumber}</span>;
+              case 'quantity':
+                return order.quantity;
+              case 'description':
+                return order.description;
+              case 'price':
+                return <span className="font-medium text-gray-800">{MXN.format(order.price ?? 0)}</span>;
+              case 'location':
+                return order.location;
+              case 'status':
+                return (
+                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap', STATUS_COLORS[order.status])}>
+                    {STATUS_LABELS[order.status]}
+                  </span>
+                );
+            }
+          }}
+          renderActions={(order) => (
+            <>
+              <button
+                onClick={() => { setEditOrder(order); setShowForm(true); }}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-accent-50 hover:text-accent-600 transition-colors"
+                title="Editar"
               >
-                <colgroup>
-                  {COLUMNS.map((c) => (
-                    <col key={c.key} style={{ width: colWidths[c.key] }} />
-                  ))}
-                  <col style={{ width: ACTIONS_W }} />
-                </colgroup>
-
-                <thead>
-                  <tr className="bg-gray-50/70 border-b border-gray-200">
-                    {COLUMNS.map((col) => {
-                      const hasFilter = (colFilters[col.key]?.size ?? 0) > 0;
-                      return (
-                        <th
-                          key={col.key}
-                          className="relative select-none text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 whitespace-nowrap border-r border-gray-200 last:border-r-0"
-                        >
-                          <div className="flex items-center gap-1.5 pr-5">
-                            <button
-                              className="flex items-center gap-1 hover:text-gray-800 transition-colors"
-                              onClick={() => handleSort(col.key)}
-                            >
-                              {col.label}
-                              <SortIcon col={col.key} sortCol={sortCol} sortDir={sortDir} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (openFilter?.col === col.key) { setOpenFilter(null); return; }
-                                const r = e.currentTarget.getBoundingClientRect();
-                                const left = Math.min(r.left, window.innerWidth - 272);
-                                setOpenFilter({ col: col.key, top: r.bottom + 4, left });
-                              }}
-                              className={cn(
-                                'p-0.5 rounded transition-colors',
-                                hasFilter ? 'text-blue-600' : 'text-gray-300 hover:text-gray-500',
-                              )}
-                            >
-                              <Filter size={11} />
-                            </button>
-                          </div>
-                          {openFilter?.col === col.key && (
-                            <FilterDropdown
-                              col={col.key}
-                              top={openFilter.top}
-                              left={openFilter.left}
-                              orders={orders}
-                              active={colFilters[col.key] ?? new Set()}
-                              onClose={() => setOpenFilter(null)}
-                              onChange={(v) =>
-                                setColFilters((prev) => ({ ...prev, [col.key]: v }))
-                              }
-                            />
-                          )}
-                          <div
-                            className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 transition-colors"
-                            onMouseDown={(e) => startResize(col.key, e)}
-                          />
-                        </th>
-                      );
-                    })}
-                    <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 text-center bg-gray-50/70">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-gray-100">
-                  {pageRows.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={COLUMNS.length + 1}
-                        className="py-14 text-center text-sm text-gray-400"
-                      >
-                        {orders.length === 0
-                          ? 'No hay pedidos registrados'
-                          : 'Sin resultados para los filtros aplicados'}
-                      </td>
-                    </tr>
-                  ) : (
-                    pageRows.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="hover:bg-blue-50/40 transition-colors"
-                      >
-                        <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap">
-                          {isoToDisplay(order.captureDate)}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.capturedBy}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.requestedBy}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.carModel}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
-                          {order.vin}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs font-semibold text-gray-800 border-r border-gray-100 truncate">
-                          {order.clientName}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap">
-                          {order.clientPhone}
-                        </td>
-                        <td className="px-3 py-2.5 border-r border-gray-100 text-center">
-                          {order.invoice
-                            ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200">Sí</span>
-                            : <span className="text-gray-300">&nbsp;</span>
-                          }
-                        </td>
-                        <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
-                          {order.partNumber}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-700 text-center border-r border-gray-100">
-                          {order.quantity}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                          {order.description}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs font-medium text-gray-800 border-r border-gray-100 whitespace-nowrap">
-                          {MXN.format(order.price ?? 0)}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 truncate">
-                          {order.location}
-                        </td>
-                        <td className="px-3 py-2.5 border-r border-gray-100">
-                          <span
-                            className={cn(
-                              'px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap',
-                              STATUS_COLORS[order.status],
-                            )}
-                          >
-                            {STATUS_LABELS[order.status]}
-                          </span>
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => { setEditOrder(order); setShowForm(true); }}
-                              className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(order)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                              title="Eliminar"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {totalPages > 1 && (
+                <PencilSimple size={14} />
+              </button>
+              <button
+                onClick={() => handleDelete(order)}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors"
+                title="Eliminar"
+              >
+                <Trash size={14} />
+              </button>
+            </>
+          )}
+          renderFooter={(t) => t.totalPages > 1 ? (
             <div className="flex justify-end">
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => t.setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={t.currentPage === 1}
                   className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
                 >
-                  <ChevronLeft size={16} className="text-gray-600" />
+                  <CaretLeft size={16} className="text-gray-600" />
                 </button>
-                <span className="text-xs font-medium text-gray-600 px-2">
-                  {safePage} / {totalPages}
+                <span className="text-xs font-medium text-gray-600 px-2 font-mono">
+                  {t.safePage} / {t.totalPages}
                 </span>
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => t.setCurrentPage((p) => Math.min(t.totalPages, p + 1))}
+                  disabled={t.currentPage === t.totalPages}
                   className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 transition-colors"
                 >
-                  <ChevronRight size={16} className="text-gray-600" />
+                  <CaretRight size={16} className="text-gray-600" />
                 </button>
               </div>
             </div>
-          )}
-        </div>
+          ) : null}
+        />
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1293,7 +984,7 @@ export default function RefaccionesPage() {
           <Card className="px-5 py-5">
             <h3 className="text-sm font-semibold text-gray-800 mb-4">Top Clientes</h3>
             {topClients.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-8">Sin datos</p>
+              <p className="text-xs text-gray-500 text-center py-8">Sin datos</p>
             ) : (
               <div className="divide-y divide-gray-50">
                 {topClients.map((c, i) => (
@@ -1329,7 +1020,7 @@ export default function RefaccionesPage() {
       {confirmDelete && (
         <ConfirmDialog
           title="¿Eliminar pedido?"
-          message={`${confirmDelete.clientName} · ${confirmDelete.partNumber}`}
+          message={`${confirmDelete.clientName}, ${confirmDelete.partNumber}`}
           detail={confirmDelete.description ? confirmDelete.description : undefined}
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => handleDeleteConfirmed(confirmDelete)}

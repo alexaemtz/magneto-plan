@@ -1,8 +1,12 @@
 'use client';
 
-import { X, Pencil, Trash2, Clock, Car, User, Phone, Wrench, FileText, Gauge, CheckCircle2, XCircle } from 'lucide-react';
-import { Appointment, AppointmentStatus } from '@/types';
+import { X, PencilSimple, Trash, Clock, Car, User, Phone, Wrench, FileText, Gauge, CheckCircle, XCircle } from '@phosphor-icons/react';
+import { Appointment } from '@/types';
 import { SERVICE_LABELS, isoToDisplay, formatRamp, cn } from '@/lib/utils';
+import {
+  APPOINTMENT_STATUS_LABELS as STATUS_LABEL,
+  APPOINTMENT_STATUS_COLORS as STATUS_COLOR,
+} from '@/lib/status';
 
 interface Props {
   appt: Appointment;
@@ -11,35 +15,11 @@ interface Props {
   onDelete: (appt: Appointment) => void;
 }
 
-const STATUS_LABEL: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'Recibido',
-  PROGRAMADO:          'Programado',
-  EN_PROCESO:          'En proceso',
-  COMPLETADO:          'Completado',
-  LAVADO:              'Lavado',
-  NO_SHOW:             'No show',
-  ESPERANDO_REFACCION: 'Esperando refacción',
-  ENTREGADO:           'Entregado',
-  CARRY_OVER:          'Carry Over',
-};
-
-const STATUS_COLOR: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'bg-teal-100 text-teal-700 border border-teal-300',
-  PROGRAMADO:          'bg-blue-100 text-blue-700 border border-blue-300',
-  EN_PROCESO:          'bg-amber-100 text-amber-700 border border-amber-300',
-  COMPLETADO:          'bg-green-100 text-green-700 border border-green-300',
-  LAVADO:              'bg-sky-100 text-sky-600 border border-sky-300',
-  NO_SHOW:             'bg-gray-100 text-gray-500 border border-gray-300',
-  ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700 border border-orange-300',
-  ENTREGADO:           'bg-emerald-100 text-emerald-700 border border-emerald-300',
-  CARRY_OVER:          'bg-purple-100 text-purple-700 border border-purple-300',
-};
-
 function Row({ icon, label, value }: { icon?: React.ReactNode; label: string; value: React.ReactNode }) {
   if (!value && value !== 0) return null;
   return (
     <div className="flex items-start gap-2.5 py-2 border-b border-gray-50 last:border-0">
-      {icon && <span className="text-gray-400 mt-0.5 shrink-0">{icon}</span>}
+      {icon && <span className="text-gray-500 mt-0.5 shrink-0">{icon}</span>}
       {!icon && <span className="w-4 shrink-0" />}
       <span className="text-xs text-gray-500 w-36 shrink-0 font-medium pt-0.5">{label}</span>
       <span className="text-sm text-gray-800 font-medium flex-1 min-w-0 break-words">{value}</span>
@@ -52,9 +32,9 @@ function BoolRow({ label, value }: { label: string; value: boolean }) {
     <div className="flex items-center gap-2.5 py-2 border-b border-gray-50 last:border-0">
       <span className="w-4 shrink-0" />
       <span className="text-xs text-gray-500 w-36 shrink-0 font-medium">{label}</span>
-      <span className={cn('flex items-center gap-1 text-xs font-semibold', value ? 'text-green-600' : 'text-gray-400')}>
+      <span className={cn('flex items-center gap-1 text-xs font-semibold', value ? 'text-green-600' : 'text-gray-500')}>
         {value
-          ? <><CheckCircle2 size={13} /> Sí</>
+          ? <><CheckCircle size={13} /> Sí</>
           : <><XCircle size={13} /> No</>}
       </span>
     </div>
@@ -93,12 +73,12 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              {SERVICE_LABELS[appt.serviceType]} · {isoToDisplay(appt.date)}
+              {SERVICE_LABELS[appt.serviceType]}, {isoToDisplay(appt.date)}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-600 transition-colors shrink-0"
           >
             <X size={18} />
           </button>
@@ -106,7 +86,7 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-5 py-3">
-          <Row icon={<Clock size={14} />}  label="Horario"    value={`${appt.startTime} · ${appt.endTime}`} />
+          <Row icon={<Clock size={14} />}  label="Horario"    value={`${appt.startTime}–${appt.endTime}`} />
           <Row icon={<Wrench size={14} />} label="Rampa"      value={rampLabel} />
           <Row icon={<User size={14} />}   label="Asesor"     value={appt.advisor} />
           <Row icon={<User size={14} />}   label="Técnico"    value={appt.tecnico} />
@@ -139,7 +119,7 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
             onClick={handleDelete}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors"
           >
-            <Trash2 size={13} />
+            <Trash size={13} />
             Eliminar
           </button>
           <div className="flex-1" />
@@ -151,9 +131,9 @@ export default function AppointmentDetailDialog({ appt, onClose, onEdit, onDelet
           </button>
           <button
             onClick={handleEdit}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-colors"
           >
-            <Pencil size={14} />
+            <PencilSimple size={14} />
             Editar
           </button>
         </div>

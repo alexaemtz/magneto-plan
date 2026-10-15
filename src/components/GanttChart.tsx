@@ -1,17 +1,26 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Plus, X, Ban } from 'lucide-react';
-import { Appointment, AppointmentStatus, Ramp, RampBlock } from '@/types';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, X, Prohibit } from '@phosphor-icons/react';
+import { Appointment, Ramp, RampBlock } from '@/types';
 import {
   generateTimeSlots,
   timeToMinutes,
   minutesToTime,
   rampBlockRangeForDate,
-  SERVICE_COLORS_LIGHT,
+  todayISO,
   SERVICE_LABELS,
   cn,
 } from '@/lib/utils';
+import {
+  APPOINTMENT_STATUS_COLORS as STATUS_COLORS,
+  APPOINTMENT_STATUS_LABELS as STATUS_LABELS,
+} from '@/lib/status';
+
+const LEGEND_STATUSES = [
+  'RECIBIDO', 'PROGRAMADO', 'EN_PROCESO', 'COMPLETADO', 'LAVADO',
+  'ESPERANDO_REFACCION', 'NO_SHOW', 'ENTREGADO', 'CARRY_OVER',
+] as const;
 
 const WASH_MIN = 45; // fixed duration for LAVADO blocks
 
@@ -39,18 +48,6 @@ const RAMPS: { label: string; ramp: Ramp | null; type: string }[] = [
   { label: 'LAVADO',    ramp: null, type: 'wash'    },
 ];
 
-const STATUS_DOT: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'bg-teal-500',
-  PROGRAMADO:          'bg-gray-400',
-  EN_PROCESO:          'bg-green-500',
-  COMPLETADO:          'bg-blue-600',
-  LAVADO:              'bg-sky-400',
-  NO_SHOW:             'bg-red-500',
-  ESPERANDO_REFACCION: 'bg-yellow-500',
-  ENTREGADO:           'bg-emerald-500',
-  CARRY_OVER:          'bg-purple-500',
-};
-
 const SLOT_WIDTH = 80; // px per 30-min slot
 const ROW_HEIGHT = 56; // px
 
@@ -72,6 +69,18 @@ export default function GanttChart({
   const [menuCell, setMenuCell]   = useState<{ ramp: Ramp; time: string; x: number; y: number } | null>(null);
 
   const slots = useMemo(() => generateTimeSlots('07:00', '21:00', 30), []);
+
+  // Live "now" marker — ticks every minute, only rendered on today's date.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const startMin = timeToMinutes('07:00');
+  const endMin = timeToMinutes('21:00');
+  const showNow = date === todayISO() && nowMin >= startMin && nowMin <= endMin;
+  const nowLeft = 112 + ((nowMin - startMin) / 30) * SLOT_WIDTH;
 
   // Route each appointment to its display row
   const byRamp = useMemo(() => {
@@ -135,24 +144,33 @@ export default function GanttChart({
   const totalWidth  = slots.length * SLOT_WIDTH + 112;
 
   return (
-    <div className="w-full overflow-x-auto pb-1">
+    <div className="w-full overflow-x-auto scroll-slim pb-1">
     <div className="relative rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]" style={{ width: 'fit-content' }}>
-      {/* Legend */}
-      <div className="flex flex-wrap gap-1.5 px-4 py-3 border-b border-gray-100 bg-gray-50/60">
-        {Object.entries(SERVICE_LABELS).map(([key, label]) => (
+      {/* Legend — status roles, one hue per meaning */}
+      <div className="flex flex-wrap gap-1.5 px-4 py-3 border-b border-line bg-surface-muted/60">
+        {LEGEND_STATUSES.map((key) => (
           <span
             key={key}
-            className={cn('text-[11px] px-2 py-0.5 rounded-md border font-medium leading-4', SERVICE_COLORS_LIGHT[key as keyof typeof SERVICE_COLORS_LIGHT])}
+            className={cn('text-[11px] px-2 py-0.5 rounded-md font-medium leading-4', STATUS_COLORS[key])}
           >
-            {label}
+            {STATUS_LABELS[key]}
           </span>
         ))}
       </div>
 
       <div key={date} style={{ minWidth: totalWidth }} className="relative">
+        {/* Live "now" marker */}
+        {showNow && (
+          <div className="pointer-events-none absolute inset-y-0 z-20 w-px bg-accent-500/70" style={{ left: nowLeft }}>
+            <span className="absolute -top-px -translate-x-1/2 rounded-b-md bg-accent-600 px-1.5 py-0.5 font-mono text-[9px] font-semibold leading-tight text-white shadow-sm">
+              {minutesToTime(nowMin)}
+            </span>
+          </div>
+        )}
+
         {/* Header: time slots */}
         <div className="flex sticky top-0 z-10 bg-white border-b border-gray-200">
-          <div className="w-28 shrink-0 bg-gray-50/60 border-r border-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-500 uppercase tracking-wide py-3">
+          <div className="w-28 shrink-0 bg-gray-50/60 border-r border-gray-200 flex items-center justify-center text-xs font-semibold text-gray-500 py-3">
             Rampa
           </div>
           {slots.map((t) => (
@@ -225,12 +243,16 @@ export default function GanttChart({
                       <div
                         key={t}
                         draggable={!!onMove}
+                        tabIndex={onSelect ? 0 : undefined}
+                        role={onSelect ? 'button' : undefined}
+                        aria-label={`${occupant.carModel}, ${SERVICE_LABELS[occupant.serviceType]}, ${occupant.startTime} a ${occupant.endTime}`}
                         style={{ width: SLOT_WIDTH * span, minWidth: SLOT_WIDTH * span, opacity: isDragging ? 0.4 : 1 }}
                         className={cn(
-                          'shrink-0 relative rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden',
+                          'group/block shrink-0 relative rounded mx-0.5 my-1 px-1.5 py-1 border overflow-hidden',
                           'flex flex-col justify-center gap-0.5 transition-[filter] hover:brightness-95',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1',
                           onMove ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-                          SERVICE_COLORS_LIGHT[occupant.serviceType],
+                          STATUS_COLORS[occupant.status],
                         )}
                         onDragStart={(e) => {
                           setDragAppt(occupant);
@@ -240,25 +262,27 @@ export default function GanttChart({
                         }}
                         onDragEnd={() => { setDragAppt(null); setDragOver(null); }}
                         onClick={() => { if (!isDragging) onSelect?.(occupant); }}
+                        onKeyDown={(e) => {
+                          if (!onSelect) return;
+                          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(occupant); }
+                          if (e.key === 'Delete' && onDelete) { e.preventDefault(); onDelete(occupant); }
+                        }}
                         onMouseEnter={(e) => setTooltip({ appt: occupant, x: e.clientX, y: e.clientY })}
                         onMouseLeave={() => setTooltip(null)}
                       >
                         {onDelete && (
                           <button
-                            className="absolute top-0.5 right-0.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4 flex items-center justify-center rounded bg-black/15 hover:bg-red-500 hover:text-white text-current"
+                            aria-label="Eliminar cita"
+                            tabIndex={-1}
+                            className="absolute top-0.5 right-0.5 z-10 opacity-0 group-hover/block:opacity-100 group-focus-within/block:opacity-100 transition-opacity w-4 h-4 flex items-center justify-center rounded bg-black/15 hover:bg-red-500 hover:text-white text-current"
                             onClick={(e) => { e.stopPropagation(); onDelete(occupant); }}
                             title="Eliminar cita"
                           >
                             <X size={10} strokeWidth={2.5} />
                           </button>
                         )}
-                        <div className="flex items-center gap-1 min-w-0">
-                          <span className={cn('w-2 h-2 rounded-full shrink-0', STATUS_DOT[occupant.status])} />
-                          <span className="text-xs font-semibold truncate">{occupant.carModel}</span>
-                        </div>
-                        {span > 1 && (
-                          <span className="text-xs truncate opacity-80">{occupant.serialNumber}</span>
-                        )}
+                        <span className="text-xs font-semibold truncate leading-tight">{occupant.carModel}</span>
+                        <span className="text-[10px] truncate opacity-80 leading-tight">{SERVICE_LABELS[occupant.serviceType]}</span>
                       </div>
                     );
                   }
@@ -284,7 +308,7 @@ export default function GanttChart({
                       >
                         {isFirst && (
                           <span className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 bg-white/85 px-1.5 py-0.5 rounded whitespace-nowrap">
-                            <Ban size={10} /> Inhabilitada
+                            <Prohibit size={10} /> Inhabilitada
                           </span>
                         )}
                       </div>
@@ -303,8 +327,8 @@ export default function GanttChart({
                       className={cn(
                         'shrink-0 border-r relative transition-colors',
                         isDragTarget
-                          ? 'bg-blue-100 border-blue-400'
-                          : 'border-gray-100 hover:bg-blue-50/50',
+                          ? 'bg-accent-100 border-accent-400'
+                          : 'border-gray-100 hover:bg-accent-50/50',
                         onSlotClick && !dragAppt ? 'cursor-pointer' : '',
                       )}
                       onClick={(e) => {
@@ -335,8 +359,8 @@ export default function GanttChart({
                     >
                       {onSlotClick && !dragAppt && isHovered && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">
-                            <Plus size={10} className="text-blue-600" />
+                          <div className="w-5 h-5 rounded-full bg-accent-500/20 flex items-center justify-center">
+                            <Plus size={10} className="text-accent-600" />
                           </div>
                         </div>
                       )}
@@ -356,16 +380,16 @@ export default function GanttChart({
           className="fixed z-50 pointer-events-none bg-gray-900 text-white text-xs rounded-lg shadow-xl p-3 max-w-xs space-y-0.5"
           style={{ left: tooltip.x + 12, top: tooltip.y - 10 }}
         >
-          <p className="font-bold">{tooltip.appt.carModel} · {SERVICE_LABELS[tooltip.appt.serviceType]}</p>
+          <p className="font-bold">{tooltip.appt.carModel}, {SERVICE_LABELS[tooltip.appt.serviceType]}</p>
           <p>VIN: {tooltip.appt.serialNumber || 'Sin VIN'}</p>
           <p>Cliente: {tooltip.appt.clientName}</p>
           <p>Tel: {tooltip.appt.clientPhone}</p>
           <p>Asesor: {tooltip.appt.advisor}</p>
           {tooltip.appt.tecnico && <p>Técnico: {tooltip.appt.tecnico}</p>}
-          <p>En proceso: {tooltip.appt.startTime} · {tooltip.appt.endTime}</p>
+          <p>En proceso: {tooltip.appt.startTime}–{tooltip.appt.endTime}</p>
           {tooltip.appt.status === 'LAVADO' && tooltip.appt.lavadoStartTime && (
             <p className="text-sky-300">
-              Lavado: {tooltip.appt.lavadoStartTime} · {minutesToTime(timeToMinutes(tooltip.appt.lavadoStartTime) + WASH_MIN)}
+              Lavado: {tooltip.appt.lavadoStartTime}–{minutesToTime(timeToMinutes(tooltip.appt.lavadoStartTime) + WASH_MIN)}
             </p>
           )}
           {tooltip.appt.km != null && <p>KM: {tooltip.appt.km.toLocaleString()}</p>}
@@ -385,13 +409,13 @@ export default function GanttChart({
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
               onClick={() => { onSlotClick?.(menuCell.ramp, menuCell.time); setMenuCell(null); }}
             >
-              <Plus size={14} className="text-blue-600" /> Nueva cita
+              <Plus size={14} className="text-accent-600" /> Nueva cita
             </button>
             <button
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
               onClick={() => { onDisableRamp?.(menuCell.ramp, menuCell.time); setMenuCell(null); }}
             >
-              <Ban size={14} className="text-red-500" /> Inhabilitar rampa
+              <Prohibit size={14} className="text-red-500" /> Inhabilitar rampa
             </button>
           </div>
         </div>

@@ -17,7 +17,7 @@ import { deleteAppointment, updateAppointment } from '@/lib/firestore/appointmen
 import { subscribeToRampBlocks, deleteRampBlock } from '@/lib/firestore/rampBlocks';
 import { todayISO, formatDate, isoToDisplay, timeToMinutes, minutesToTime } from '@/lib/utils';
 import { useDateAppointments } from '@/hooks/useDateAppointments';
-import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Table2, Calendar, Clock } from 'lucide-react';
+import { CaretLeft, CaretRight, Plus, SquaresFour, Table, Calendar, Clock } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useSearch } from '@/context/SearchContext';
@@ -153,13 +153,13 @@ export default function GanttPage() {
 
           <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-1.5 py-1.5">
             <button onClick={() => shiftDay(-1)} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Día anterior">
-              <ChevronLeft size={18} />
+              <CaretLeft size={18} />
             </button>
             <div
               className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
               onClick={() => dateInputRef.current?.showPicker()}
             >
-              <Calendar size={14} className="text-gray-400" />
+              <Calendar size={14} className="text-gray-500" />
               <span className="text-sm font-medium text-gray-700 select-none tabular">
                 {isoToDisplay(date)}
               </span>
@@ -172,14 +172,14 @@ export default function GanttPage() {
               />
             </div>
             <button onClick={() => shiftDay(1)} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Día siguiente">
-              <ChevronRight size={18} />
+              <CaretRight size={18} />
             </button>
           </div>
 
           {perms.create && (
             <button
               onClick={() => { setEditAppt(undefined); setSelectedRamp(null); setSelectedTime('08:00'); setShowForm(true); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/20"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 active:scale-[0.98] transition-all shadow-lg shadow-accent-600/20"
             >
               <Plus size={16} />
               Nueva cita
@@ -190,7 +190,7 @@ export default function GanttPage() {
         {/* ── Tabs + subtitle ── */}
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-gray-500 font-medium tabular">
-            {formatDate(date)} · {searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''} cita{searchedAppts.length !== 1 ? 's' : ''}
+            {formatDate(date)}, {searchedAppts.length}{searchedAppts.length !== appointments.length ? `/${appointments.length}` : ''} cita{searchedAppts.length !== 1 ? 's' : ''}
           </p>
 
           <div className="flex rounded-xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)] p-1">
@@ -201,7 +201,7 @@ export default function GanttPage() {
                 activeTab === 'gantt' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
               )}
             >
-              <LayoutGrid size={13} />
+              <SquaresFour size={13} />
               Gantt
             </button>
             <button
@@ -211,7 +211,7 @@ export default function GanttPage() {
                 activeTab === 'tabla' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
               )}
             >
-              <Table2 size={13} />
+              <Table size={13} />
               Tabla
             </button>
             <button
@@ -247,7 +247,7 @@ export default function GanttPage() {
         ) : activeTab === 'tabla' ? (
           loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <AppointmentTable
@@ -258,7 +258,7 @@ export default function GanttPage() {
         ) : (
           loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <TecnicoHoursTab appointments={searchedAppts} />
@@ -309,7 +309,7 @@ export default function GanttPage() {
         <ConfirmDialog
           title="¿Eliminar cita?"
           message={`${confirmDelete.clientName} · ${confirmDelete.carModel}`}
-          detail={`${isoToDisplay(confirmDelete.date)} · ${confirmDelete.startTime}`}
+          detail={`${isoToDisplay(confirmDelete.date)} a las ${confirmDelete.startTime}`}
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => handleDeleteConfirmed(confirmDelete)}
         />

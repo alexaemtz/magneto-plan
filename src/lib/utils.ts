@@ -42,30 +42,6 @@ export const SERVICE_LABELS: Record<ServiceType, string> = {
   SIN_CITA:             'Sin Cita',
 };
 
-export const SERVICE_COLORS: Record<ServiceType, string> = {
-  SERVICIO:             'bg-green-500',
-  GARANTIA:             'bg-purple-500',
-  DIAGNOSTICO:          'bg-yellow-500',
-  SERVICIO_DIAGNOSTICO: 'bg-blue-500',
-  SERVICIO_GARANTIA:    'bg-blue-500',
-  ALINEACION_BALANCEO:  'bg-indigo-500',
-  BALANCEO:             'bg-indigo-400',
-  GARANTIA_DIAGNOSTICO: 'bg-violet-500',
-  SIN_CITA:             'bg-rose-500',
-};
-
-export const SERVICE_COLORS_LIGHT: Record<ServiceType, string> = {
-  SERVICIO:             'bg-green-50 border-green-300 text-green-700',
-  GARANTIA:             'bg-purple-50 border-purple-300 text-purple-700',
-  DIAGNOSTICO:          'bg-yellow-50 border-yellow-300 text-yellow-700',
-  SERVICIO_DIAGNOSTICO: 'bg-blue-50 border-blue-300 text-blue-700',
-  SERVICIO_GARANTIA:    'bg-blue-50 border-blue-300 text-blue-700',
-  ALINEACION_BALANCEO:  'bg-indigo-50 border-indigo-300 text-indigo-700',
-  BALANCEO:             'bg-indigo-50 border-indigo-300 text-indigo-600',
-  GARANTIA_DIAGNOSTICO: 'bg-violet-50 border-violet-300 text-violet-700',
-  SIN_CITA:             'bg-rose-50 border-rose-300 text-rose-700',
-};
-
 /** Rango horario (HH:MM–HH:MM) que un bloqueo de rampa cubre en una fecha dada, o null si esa fecha no cae dentro del bloqueo. */
 export function rampBlockRangeForDate(block: RampBlock, date: string): { startTime: string; endTime: string } | null {
   if (date < block.startDate) return null;

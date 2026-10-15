@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Ban, ChevronDown } from 'lucide-react';
+import { Prohibit, CaretDown } from '@phosphor-icons/react';
 import { RampBlock } from '@/types';
 import { formatRamp, isoToDisplay, todayISO, cn } from '@/lib/utils';
 
@@ -23,9 +23,9 @@ export default function RampBlocksSummary({ blocks, onReactivate }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors"
       >
-        <Ban size={13} />
+        <Prohibit size={13} />
         {current.length} rampa{current.length !== 1 ? 's' : ''} inhabilitada{current.length !== 1 ? 's' : ''}
-        <ChevronDown size={12} className={cn('transition-transform', open && 'rotate-180')} />
+        <CaretDown size={12} className={cn('transition-transform', open && 'rotate-180')} />
       </button>
 
       {open && (
@@ -39,7 +39,7 @@ export default function RampBlocksSummary({ blocks, onReactivate }: Props) {
                     <p className="text-sm font-semibold text-gray-800">{formatRamp(b.ramp)}</p>
                     <button
                       onClick={() => { onReactivate(b); setOpen(false); }}
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 shrink-0"
+                      className="text-xs font-semibold text-accent-600 hover:text-accent-700 shrink-0"
                     >
                       Reactivar
                     </button>
@@ -47,7 +47,7 @@ export default function RampBlocksSummary({ blocks, onReactivate }: Props) {
                   <p className="text-xs text-gray-500 mt-0.5">
                     Desde {isoToDisplay(b.startDate)}{b.endDate ? ` hasta ${isoToDisplay(b.endDate)}` : ' (indefinido)'}
                   </p>
-                  {b.carModel && <p className="text-xs text-gray-400 mt-0.5">{b.carModel}</p>}
+                  {b.carModel && <p className="text-xs text-gray-500 mt-0.5">{b.carModel}</p>}
                   <p className="text-sm text-gray-600 mt-1 leading-relaxed line-clamp-2">{b.notes}</p>
                 </div>
               ))}

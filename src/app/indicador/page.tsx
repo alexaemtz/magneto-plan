@@ -7,7 +7,7 @@ import DailyIndicatorTable, { AccumulatedValues } from '@/components/DailyIndica
 import { DailyIndicator } from '@/types';
 import { getIndicatorsByMonth, upsertDailyIndicator } from '@/lib/firestore/indicators';
 import { todayISO } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { CaretLeft, CaretRight, Plus } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 
 const MONTHS = [
@@ -122,18 +122,18 @@ export default function IndicadorPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-1.5">
               <button onClick={() => shiftMonth(-1)} className="p-1 rounded hover:bg-gray-100 transition-colors">
-                <ChevronLeft size={18} className="text-gray-600" />
+                <CaretLeft size={18} className="text-gray-600" />
               </button>
               <span className="text-sm font-semibold text-gray-700 px-2 min-w-36 text-center">
                 {MONTHS[month - 1]} {year}
               </span>
               <button onClick={() => shiftMonth(1)} className="p-1 rounded hover:bg-gray-100 transition-colors">
-                <ChevronRight size={18} className="text-gray-600" />
+                <CaretRight size={18} className="text-gray-600" />
               </button>
             </div>
 
             <button onClick={() => setAdding(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-colors">
               <Plus size={16} />
               Agregar día
             </button>
@@ -143,8 +143,8 @@ export default function IndicadorPage() {
         {/* Resumen del mes (totales acumulados hasta el último día registrado) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Servicios (mes)',    value: monthSummary.rows['citadosServicio'] ?? 0,   color: 'text-blue-600' },
-            { label: 'Reparaciones (mes)', value: monthSummary.rows['citadosReparacion'] ?? 0, color: 'text-purple-600' },
+            { label: 'Servicios (mes)',    value: monthSummary.rows['citadosServicio'] ?? 0,   color: 'text-accent-600' },
+            { label: 'Reparaciones (mes)', value: monthSummary.rows['citadosReparacion'] ?? 0, color: 'text-accent-600' },
             { label: 'Sin cita (mes)',     value: monthSummary.rows['sinCita'] ?? 0,            color: 'text-rose-600' },
             { label: 'Ingresos acumulados', value: monthSummary.ingresos,                       color: 'text-green-600' },
           ].map((s) => (
@@ -161,11 +161,11 @@ export default function IndicadorPage() {
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Fecha</label>
               <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-accent-400" />
             </div>
             <div className="flex gap-2 pt-4">
               <button onClick={handleAdd}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors">
+                className="px-4 py-2 rounded-lg bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-colors">
                 Crear
               </button>
               <button onClick={() => setAdding(false)}
@@ -179,10 +179,10 @@ export default function IndicadorPage() {
         {/* Lista de indicadores */}
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : indicators.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-400">
+          <div className="bg-white rounded-xl border border-gray-200 py-16 text-center text-gray-500">
             No hay indicadores para {MONTHS[month - 1]} {year}
           </div>
         ) : (

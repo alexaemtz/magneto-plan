@@ -1,13 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #16181d;
+  /* Floor / paper */
+  --background: #f5f6f3;
+  --foreground: #12171b;
 
   /* Surfaces */
-  --surface:      #ffffff;
-  --surface-muted: #f6f7f9;
-  --surface-ring:  #e7e9ee;
+  --surface:       #ffffff;
+  --surface-muted: #eef0ec;
+  --surface-ring:  #e3e6e2;
+
+  /* Structural ink — sidebar/login dark surfaces, text */
+  --ink:  #12171b;
+  --line: #e3e6e2;
+
+  /* Elevation — one token for every card surface */
+  --shadow-card: 0 1px 2px rgba(18, 23, 27, 0.05);
+
+  /* Radii hierarchy: surfaces are softer than controls */
+  --radius-surface: 0.875rem;
+  --radius-control: 0.625rem;
 
   /* Custom easing curves — UI interactions */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -16,26 +28,37 @@
 }
 
 /* ── Brand palette ──────────────────────────────────────────────────────────
-   Overrides the default Tailwind `blue` scale with a calmer, deeper cobalt so
-   every `blue-*` utility across the app rethemes through the theme system.  */
+   High-voltage cobalt — the single accent, grounded in EV/electrical language.
+   Status roles live in lib/status.ts; purple/violet/indigo stay absent. */
 @theme {
-  --color-blue-50:  #eff4ff;
-  --color-blue-100: #e2ecfc;
-  --color-blue-200: #c4d6fa;
-  --color-blue-300: #94b4f4;
-  --color-blue-400: #5f89ec;
-  --color-blue-500: #3d63e0;
-  --color-blue-600: #2b48d0;
-  --color-blue-700: #253aac;
-  --color-blue-800: #22328a;
-  --color-blue-900: #1d2b6c;
-  --color-blue-950: #151c41;
+  --color-accent-50:  #eef1ff;
+  --color-accent-100: #dce2ff;
+  --color-accent-200: #b9c4ff;
+  --color-accent-300: #93a3ff;
+  --color-accent-400: #6178f6;
+  --color-accent-500: #3a50f0;
+  --color-accent-600: #2434d6;
+  --color-accent-700: #1d2aa8;
+  --color-accent-800: #1a2488;
+  --color-accent-900: #1a2270;
+  --color-accent-950: #0b1040;
+
+  --color-paper:         var(--background);
+  --color-surface:       var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line:          var(--line);
+  --color-ink:           var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-outfit);
+  --color-ink: var(--ink);
+  --shadow-card: var(--shadow-card);
+  --radius-surface: var(--radius-surface);
+  --radius-control: var(--radius-control);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-jetbrains-mono);
   --ease-out-quart: var(--ease-out-quart);
   --ease-out-expo:  var(--ease-out-expo);
   --ease-in-out-quart: var(--ease-in-out-quart);
@@ -108,7 +131,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-outfit), sans-serif;
+  font-family: var(--font-archivo), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -117,28 +140,67 @@ h1, h2, h3 {
   letter-spacing: -0.01em;
 }
 
-/* Scrollbar discreto y suave */
+/* ── Scrollbars ──────────────────────────────────────────────────────
+   Slim, rounded overlay-style thumbs: a transparent track so the surface
+   shows through, a padded pill thumb, and a clear hover state. Firefox
+   gets the matching two-value `scrollbar-color`. */
 html {
   scrollbar-gutter: stable;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+  scrollbar-color: rgba(18, 23, 27, 0.16) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(18, 23, 27, 0.14);
   border-radius: 999px;
-  border: 1px solid transparent;
+  border: 3px solid transparent;
   background-clip: padding-box;
+  transition: background-color 150ms ease;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.16);
-  border: 1px solid transparent;
+  background: rgba(18, 23, 27, 0.28);
+  border: 3px solid transparent;
   background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(18, 23, 27, 0.38);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Slim, hover-revealed scrollbars for dense horizontal scrollers (the Gantt
+   board and the data tables). Nearly invisible at rest, a thin 4px pill on
+   hover — quiet enough to disappear into the surface. */
+@utility scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 23, 27, 0.14) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(18, 23, 27, 0.1);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 150ms ease;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(18, 23, 27, 0.26);
+    background-clip: padding-box;
+  }
 }

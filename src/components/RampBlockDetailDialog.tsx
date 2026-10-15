@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Ban, RotateCcw, Calendar, Car } from 'lucide-react';
+import { X, Prohibit, ArrowCounterClockwise, Calendar, Car } from '@phosphor-icons/react';
 import { RampBlock } from '@/types';
 import { formatRamp, isoToDisplay } from '@/lib/utils';
 
@@ -21,17 +21,17 @@ export default function RampBlockDetailDialog({ block, onClose, onReactivate }: 
       <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-red-50 text-red-500"><Ban size={16} /></span>
+            <span className="p-1.5 rounded-lg bg-red-50 text-red-500"><Prohibit size={16} /></span>
             <h2 className="text-base font-bold text-gray-900">{formatRamp(block.ramp)} inhabilitada</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-600 transition-colors">
             <X size={18} />
           </button>
         </div>
 
         <div className="px-5 py-4 space-y-3">
           <div className="flex items-start gap-2.5">
-            <Calendar size={14} className="text-gray-400 mt-0.5 shrink-0" />
+            <Calendar size={14} className="text-gray-500 mt-0.5 shrink-0" />
             <p className="text-sm text-gray-700">
               Desde {isoToDisplay(block.startDate)} {block.startTime}
               {block.endDate ? ` hasta ${isoToDisplay(block.endDate)} ${block.endTime ?? ''}` : ' (indefinido)'}
@@ -39,7 +39,7 @@ export default function RampBlockDetailDialog({ block, onClose, onReactivate }: 
           </div>
           {block.carModel && (
             <div className="flex items-start gap-2.5">
-              <Car size={14} className="text-gray-400 mt-0.5 shrink-0" />
+              <Car size={14} className="text-gray-500 mt-0.5 shrink-0" />
               <p className="text-sm text-gray-700">{block.carModel}</p>
             </div>
           )}
@@ -55,9 +55,9 @@ export default function RampBlockDetailDialog({ block, onClose, onReactivate }: 
           </button>
           <button
             onClick={handleReactivate}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-colors"
           >
-            <RotateCcw size={14} />
+            <ArrowCounterClockwise size={14} />
             Reactivar rampa
           </button>
         </div>

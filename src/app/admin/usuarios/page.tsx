@@ -10,7 +10,7 @@ import {
   PAGE_LABELS, DEFAULT_PAGE_PERMISSIONS,
 } from '@/types';
 import { cn } from '@/lib/utils';
-import { ShieldCheck, User, X, Save, Loader2 } from 'lucide-react';
+import { ShieldCheck, User, X, FloppyDisk, CircleNotch } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { PageHeader, TableSkeleton } from '@/components/ui/primitives';
 
@@ -82,7 +82,7 @@ function EditModal({ user, onClose, onSaved }: EditModalProps) {
                     className={cn(
                       'px-3.5 py-1.5 text-xs font-semibold transition-colors',
                       role === r
-                        ? r === 'admin' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'
+                        ? r === 'admin' ? 'bg-accent-600 text-white' : 'bg-gray-700 text-white'
                         : 'text-gray-500 hover:bg-gray-50',
                     )}
                   >
@@ -112,7 +112,7 @@ function EditModal({ user, onClose, onSaved }: EditModalProps) {
           {/* Permission matrix — only for non-admin */}
           {role !== 'admin' && (
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+              <p className="text-xs font-semibold text-gray-500 mb-3">
                 Permisos por página
               </p>
               <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -137,7 +137,7 @@ function EditModal({ user, onClose, onSaved }: EditModalProps) {
                               type="checkbox"
                               checked={perms[page]?.[key] ?? false}
                               onChange={() => togglePerm(page, key)}
-                              className="w-4 h-4 rounded border-gray-300 text-blue-600 cursor-pointer"
+                              className="w-4 h-4 rounded border-gray-300 text-accent-600 cursor-pointer"
                             />
                           </td>
                         ))}
@@ -150,7 +150,7 @@ function EditModal({ user, onClose, onSaved }: EditModalProps) {
           )}
 
           {role === 'admin' && (
-            <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2.5">
+            <p className="text-xs text-accent-600 bg-accent-50 rounded-lg px-3 py-2.5">
               Los administradores tienen acceso completo a todas las páginas y acciones.
             </p>
           )}
@@ -167,9 +167,9 @@ function EditModal({ user, onClose, onSaved }: EditModalProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 disabled:opacity-60 transition-colors"
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? <CircleNotch size={14} className="animate-spin" /> : <FloppyDisk size={14} />}
             Guardar
           </button>
         </div>
@@ -221,11 +221,11 @@ export default function AdminUsuariosPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50/70 border-b border-gray-200">
-                  <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Usuario</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Rol</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Estado</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-gray-500">Permisos</th>
-                  <th className="px-4 py-3 text-center text-[11px] font-bold uppercase tracking-wide text-gray-500">Acción</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600">Usuario</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Rol</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Estado</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Permisos</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -236,16 +236,16 @@ export default function AdminUsuariosPage() {
                       <div className="flex items-center gap-2.5">
                         <div className={cn(
                           'w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold',
-                          u.role === 'admin' ? 'bg-blue-600' : 'bg-gray-400',
+                          u.role === 'admin' ? 'bg-accent-600' : 'bg-gray-400',
                         )}>
                           {u.role === 'admin' ? <ShieldCheck size={14} /> : <User size={14} />}
                         </div>
                         <div>
                           <p className="font-medium text-gray-800 leading-tight">{u.displayName || 'Sin nombre'}</p>
-                          <p className="text-xs text-gray-400">{u.email}</p>
+                          <p className="text-xs text-gray-500">{u.email}</p>
                         </div>
                         {u.uid === currentUser?.uid && (
-                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold">tú</span>
+                          <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-accent-50 text-accent-600 font-semibold">tú</span>
                         )}
                       </div>
                     </td>
@@ -254,7 +254,7 @@ export default function AdminUsuariosPage() {
                     <td className="px-4 py-3.5">
                       <span className={cn(
                         'px-2.5 py-1 rounded-full text-xs font-semibold',
-                        u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600',
+                        u.role === 'admin' ? 'bg-accent-100 text-accent-700' : 'bg-gray-100 text-gray-600',
                       )}>
                         {u.role === 'admin' ? 'Administrador' : 'Usuario'}
                       </span>
@@ -274,7 +274,7 @@ export default function AdminUsuariosPage() {
                     {/* Resumen de permisos */}
                     <td className="px-4 py-3.5">
                       {u.role === 'admin' ? (
-                        <span className="text-xs text-blue-600 font-medium">Acceso completo</span>
+                        <span className="text-xs text-accent-600 font-medium">Acceso completo</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {PAGES.filter((page) => u.permissions?.[page]?.read).map((page) => (
@@ -293,7 +293,7 @@ export default function AdminUsuariosPage() {
                     <td className="px-4 py-3.5 text-center">
                       <button
                         onClick={() => setEditTarget(u)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-blue-600 hover:text-white transition-colors"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-accent-600 hover:text-white transition-colors"
                       >
                         Configurar
                       </button>

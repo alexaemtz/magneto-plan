@@ -68,31 +68,31 @@ export default function DailyIndicatorTable({ indicator, readOnly = false, onSav
   }
 
   const cellCls = 'border border-gray-200 px-3 py-2 text-center text-sm';
-  const inputCls = 'w-16 text-center rounded border border-gray-300 bg-white text-gray-900 px-1 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+  const inputCls = 'w-16 text-center rounded border border-gray-300 bg-white text-gray-900 px-1 py-0.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-400';
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)] overflow-hidden">
       {/* Header */}
-      <div className="bg-[#131627] text-white px-4 py-3">
+      <div className="bg-ink text-white px-4 py-3">
         <p className="text-xs font-semibold uppercase tracking-wider opacity-60">POSTVENTA BYD HERMOSILLO</p>
         <p className="text-sm font-bold mt-0.5 tabular">{data.date}</p>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto scroll-slim">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50">
               <th className="border border-gray-200 px-4 py-2.5 text-left font-semibold text-gray-700 min-w-44">
                 Conceptos
               </th>
-              <th className="border border-gray-200 px-4 py-2.5 font-semibold text-blue-700 w-24">
+              <th className="border border-gray-200 px-4 py-2.5 font-semibold text-accent-700 w-24">
                 Hoy
               </th>
               <th className="border border-gray-200 px-4 py-2.5 font-semibold text-green-700 w-24">
                 Realizado
               </th>
               {showAccumulado && (
-                <th className="border border-gray-200 px-4 py-2.5 font-semibold text-purple-700 w-28">
+                <th className="border border-gray-200 px-4 py-2.5 font-semibold text-accent-700 w-28">
                   Acumulado
                 </th>
               )}
@@ -129,7 +129,7 @@ export default function DailyIndicatorTable({ indicator, readOnly = false, onSav
                 {/* Acumulado — solo lectura, calculado externamente */}
                 {showAccumulado && (
                   <td className={cellCls}>
-                    <span className="font-bold text-purple-700">{accumulated!.rows[key] ?? 0}</span>
+                    <span className="font-bold text-accent-700">{accumulated!.rows[key] ?? 0}</span>
                   </td>
                 )}
               </tr>
@@ -141,18 +141,18 @@ export default function DailyIndicatorTable({ indicator, readOnly = false, onSav
                 Total de día
               </td>
               <td className={cellCls}>
-                <span className="font-bold text-blue-700 text-base">{computedTotalHoy()}</span>
+                <span className="font-bold text-accent-700 text-base">{computedTotalHoy()}</span>
               </td>
               <td className={cellCls} />
               {showAccumulado && (
                 <td className={cellCls}>
-                  <span className="font-bold text-purple-700 text-base">{accumulated!.totalDia}</span>
+                  <span className="font-bold text-accent-700 text-base">{accumulated!.totalDia}</span>
                 </td>
               )}
             </tr>
 
             {/* Ingresos del día */}
-            <tr className="bg-[#131627] text-white">
+            <tr className="bg-ink text-white">
               <td className="border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-300">
                 Ingresos del día
               </td>
@@ -180,7 +180,7 @@ export default function DailyIndicatorTable({ indicator, readOnly = false, onSav
       {!readOnly && (
         <div className="px-4 py-3 border-t border-gray-100 flex justify-end">
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors">
+            className="px-4 py-2 bg-accent-600 text-white text-sm font-semibold rounded-lg hover:bg-accent-700 disabled:opacity-60 transition-colors">
             {saving ? 'Guardando...' : 'Guardar indicador'}
           </button>
         </div>

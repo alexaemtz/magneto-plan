@@ -8,7 +8,7 @@ import { createAppointment, updateAppointment } from '@/lib/firestore/appointmen
 import { createPendingCase } from '@/lib/firestore/pendingCases';
 import { getAdvisors, getCarModels, getTecnicos } from '@/lib/firestore/catalog';
 import toast from 'react-hot-toast';
-import { X } from 'lucide-react';
+import { X, CalendarDots, ClipboardText } from '@phosphor-icons/react';
 
 interface Props {
   date: string;
@@ -99,8 +99,8 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
         return;
       }
       toast(
-        `${formatRamp(saveForm.ramp ?? null)} ocupada a las ${saveForm.startTime}. Cita movida al siguiente horario disponible: ${next.startTime} · ${next.endTime}.`,
-        { icon: '📅', duration: 6000 },
+        `${formatRamp(saveForm.ramp ?? null)} ocupada a las ${saveForm.startTime}. Cita movida al siguiente horario disponible: ${next.startTime}–${next.endTime}.`,
+        { icon: <CalendarDots size={18} className="text-accent-600" />, duration: 6000 },
       );
       const newDuration = timeToMinutes(next.endTime) - timeToMinutes(next.startTime);
       saveForm = { ...saveForm, startTime: next.startTime, endTime: next.endTime, workHours: newDuration / 60 };
@@ -130,7 +130,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             partNumber: '',
             status: 'PENDIENTE',
           });
-          toast('Caso añadido a Casos Pendientes', { icon: '📋', duration: 4000 });
+          toast('Caso añadido a Casos Pendientes', { icon: <ClipboardText size={18} className="text-accent-600" />, duration: 4000 });
         } catch {
           toast.error('No se pudo crear el caso pendiente automáticamente');
         }
@@ -143,7 +143,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
     }
   }
 
-  const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400';
+  const inputCls = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-400';
   const labelCls = 'block text-xs font-semibold text-gray-700 mb-1';
 
   const showMaintenance = ['SERVICIO', 'SERVICIO_DIAGNOSTICO', 'SERVICIO_GARANTIA', 'SIN_CITA'].includes(form.serviceType ?? '');
@@ -158,7 +158,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">
-            {initial?.id ? 'Editar cita' : 'Nueva cita'} · {form.date ?? date}
+            {initial?.id ? 'Editar cita' : 'Nueva cita'}, {form.date ?? date}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
             <X size={20} className="text-gray-500" />
@@ -189,8 +189,8 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                   onClick={() => set('serviceType', t)}
                   className={`text-xs px-3 py-2 rounded-lg border font-medium transition-colors ${
                     form.serviceType === t
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                      ? 'bg-accent-600 text-white border-accent-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-accent-400'
                   }`}
                 >
                   {SERVICE_LABELS[t]}
@@ -230,7 +230,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <div>
               <label className={labelCls}>Modelo del auto *</label>
               {catalogsLoading ? (
-                <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
+                <div className={`${inputCls} text-gray-500 cursor-wait`}>Cargando...</div>
               ) : carModels.length > 0 ? (
                 <select className={inputCls} value={form.carModel ?? ''} onChange={(e) => set('carModel', e.target.value)} required>
                   <option value="">Seleccionar…</option>
@@ -256,7 +256,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
                 {MAINTENANCE_LEVELS.map((n) => (
                   <button key={n} type="button" onClick={() => set('maintenanceLevel', n)}
                     className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-colors ${
-                      form.maintenanceLevel === n ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                      form.maintenanceLevel === n ? 'bg-accent-600 text-white border-accent-600' : 'bg-white text-gray-600 border-gray-300 hover:border-accent-400'
                     }`}>
                     S{n}
                   </button>
@@ -296,7 +296,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <div>
               <label className={labelCls}>Asesor *</label>
               {catalogsLoading ? (
-                <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
+                <div className={`${inputCls} text-gray-500 cursor-wait`}>Cargando...</div>
               ) : advisors.length > 0 ? (
                 <select className={inputCls} value={form.advisor ?? ''} onChange={(e) => set('advisor', e.target.value)} required>
                   <option value="">Seleccionar…</option>
@@ -311,7 +311,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <div>
               <label className={labelCls}>Técnico</label>
               {catalogsLoading ? (
-                <div className={`${inputCls} text-gray-400 cursor-wait`}>Cargando...</div>
+                <div className={`${inputCls} text-gray-500 cursor-wait`}>Cargando...</div>
               ) : tecnicos.length > 0 ? (
                 <select className={inputCls} value={form.tecnico ?? ''} onChange={(e) => set('tecnico', e.target.value || undefined)}>
                   <option value="">Seleccionar…</option>
@@ -413,7 +413,7 @@ export default function AppointmentForm({ date, initial, ramp, startTime, existi
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               Cancelar
             </button>
-            <button type="submit" disabled={saving} className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors">
+            <button type="submit" disabled={saving} className="px-5 py-2 rounded-lg bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 disabled:opacity-60 transition-colors">
               {saving ? 'Guardando...' : initial?.id ? 'Actualizar' : 'Crear cita'}
             </button>
           </div>

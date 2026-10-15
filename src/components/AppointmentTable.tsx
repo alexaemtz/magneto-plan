@@ -1,48 +1,25 @@
 'use client';
 
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatRamp, SERVICE_LABELS, SERVICE_COLORS_LIGHT, cn } from '@/lib/utils';
-import { createPortal } from 'react-dom';
-import { Appointment, AppointmentStatus } from '@/types';
+import { formatRamp, SERVICE_LABELS, cn } from '@/lib/utils';
+import { Appointment } from '@/types';
 import { deleteAppointment } from '@/lib/firestore/appointments';
 import AppointmentForm from './AppointmentForm';
 import toast from 'react-hot-toast';
 import {
-  Search, Pencil, Trash2, Eye, X,
-  ChevronUp, ChevronDown, ChevronsUpDown,
-  Filter, Phone, Clock, FileText,
-} from 'lucide-react';
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const STATUS_LABELS: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'Recibido',
-  PROGRAMADO:          'Programado',
-  EN_PROCESO:          'En proceso',
-  COMPLETADO:          'Completado',
-  LAVADO:              'Lavado',
-  NO_SHOW:             'No show',
-  ESPERANDO_REFACCION: 'Esperando refacción',
-  ENTREGADO:           'Entregado',
-  CARRY_OVER:          'Carry Over',
-};
-
-const STATUS_COLORS: Record<AppointmentStatus, string> = {
-  RECIBIDO:            'bg-teal-100 text-teal-700 border border-teal-300',
-  PROGRAMADO:          'bg-blue-100 text-blue-700 border border-blue-300',
-  EN_PROCESO:          'bg-amber-100 text-amber-700 border border-amber-300',
-  COMPLETADO:          'bg-green-100 text-green-700 border border-green-300',
-  LAVADO:              'bg-sky-100 text-sky-600 border border-sky-300',
-  NO_SHOW:             'bg-gray-100 text-gray-500 border border-gray-300',
-  ESPERANDO_REFACCION: 'bg-orange-100 text-orange-700 border border-orange-300',
-  ENTREGADO:           'bg-emerald-100 text-emerald-700 border border-emerald-300',
-  CARRY_OVER:          'bg-purple-100 text-purple-700 border border-purple-300',
-};
+  MagnifyingGlass, PencilSimple, Trash, Eye, X,
+  Funnel, Phone, Clock, FileText,
+} from '@phosphor-icons/react';
+import {
+  APPOINTMENT_STATUS_LABELS as STATUS_LABELS,
+  APPOINTMENT_STATUS_COLORS as STATUS_COLORS,
+} from '@/lib/status';
+import { DataTable, useDataTable, type DataTableColumn, type DataTableControls } from '@/components/ui/DataTable';
 
 type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'vin' | 'serviceType' | 'ramp' | 'status' | 'workOrder' | 'campaña';
 
-const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
+const COLUMNS: DataTableColumn<ColKey>[] = [
   { key: 'date',        label: 'Fecha',            defaultWidth: 110 },
   { key: 'startTime',   label: 'Hora',             defaultWidth: 110 },
   { key: 'workOrder',   label: 'Orden de trabajo', defaultWidth: 130 },
@@ -52,9 +29,9 @@ const COLUMNS: { key: ColKey; label: string; defaultWidth: number }[] = [
   { key: 'carModel',    label: 'Modelo',           defaultWidth: 135 },
   { key: 'vin',         label: 'VIN',              defaultWidth: 150 },
   { key: 'serviceType', label: 'Tipo',             defaultWidth: 185 },
-  { key: 'ramp',        label: 'Rampa',            defaultWidth: 85  },
+  { key: 'ramp',        label: 'Rampa',            defaultWidth: 85,  align: 'center' },
   { key: 'status',      label: 'Estado',           defaultWidth: 155 },
-  { key: 'campaña',     label: 'Campaña',          defaultWidth: 85  },
+  { key: 'campaña',     label: 'Campaña',          defaultWidth: 85,  align: 'center' },
 ];
 
 const ACTIONS_W = 116;
@@ -76,81 +53,13 @@ function getColValue(a: Appointment, key: ColKey): string {
   }
 }
 
-// ── Filter dropdown (portal — siempre visible, sin verse cortado por el scroll) ──
-
-type FilterAnchor = { col: ColKey; top: number; left: number };
-
-function FilterDropdown({
-  col, top, left, appointments, active, onClose, onChange,
-}: {
-  col: ColKey;
-  top: number;
-  left: number;
-  appointments: Appointment[];
-  active: Set<string>;
-  onClose: () => void;
-  onChange: (v: Set<string>) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const unique = useMemo(
-    () => [...new Set(appointments.map((a) => getColValue(a, col)))].sort(),
-    [appointments, col],
-  );
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [onClose]);
-
-  function toggle(v: string) {
-    const next = new Set(active);
-    if (next.has(v)) next.delete(v); else next.add(v);
-    onChange(next);
-  }
-
-  return createPortal(
-    <div
-      ref={ref}
-      style={{ position: 'fixed', top, left, zIndex: 9999, ['--origin' as string]: 'top left' }}
-      className="dropdown-card w-60 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 max-h-80 overflow-y-auto"
-    >
-      <div className="flex items-center justify-between px-3.5 pb-2 border-b border-gray-100 mb-1.5">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Filtrar</span>
-        {active.size > 0 && (
-          <button onClick={() => onChange(new Set())} className="text-xs text-red-500 hover:text-red-700 font-medium">
-            Limpiar
-          </button>
-        )}
-      </div>
-      {unique.length === 0
-        ? <p className="px-3.5 py-2 text-sm text-gray-400">Sin valores</p>
-        : unique.map((v) => (
-          <label key={v} className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer">
-            <input
-              type="checkbox"
-              className="rounded border-gray-300 text-blue-600 w-4 h-4"
-              checked={active.has(v)}
-              onChange={() => toggle(v)}
-            />
-            <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
-          </label>
-        ))
-      }
-    </div>,
-    document.body,
-  );
-}
-
 // ── View panel ────────────────────────────────────────────────────────────────
 
 function Field({ label, value }: { label: string; value?: string | number | boolean | null }) {
   if (value === undefined || value === null || value === '') return null;
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-0.5">{label}</p>
+      <p className="text-xs font-semibold text-gray-500 mb-0.5">{label}</p>
       <p className="text-sm font-medium text-gray-800">
         {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value)}
       </p>
@@ -164,16 +73,16 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
         <div>
-          <p className="text-xs text-gray-400 font-medium">{appt.date}</p>
+          <p className="text-xs text-gray-500 font-medium">{appt.date}</p>
           <p className="font-semibold text-gray-800 text-sm leading-tight mt-0.5">{appt.clientName}</p>
         </div>
         <div className="flex items-center gap-2">
           {canEdit && (
             <button
               onClick={onEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-600 text-white text-xs font-semibold hover:bg-accent-700 transition-colors"
             >
-              <Pencil size={12} /> Editar
+              <PencilSimple size={12} /> Editar
             </button>
           )}
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors">
@@ -184,7 +93,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
 
       {/* Badges */}
       <div className="flex gap-2 px-5 py-3 border-b border-gray-100">
-        <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold border', SERVICE_COLORS_LIGHT[appt.serviceType])}>
+        <span className="px-2.5 py-1 rounded-full text-xs font-semibold border bg-slate-50 text-slate-600 border-slate-200">
           {SERVICE_LABELS[appt.serviceType]}
         </span>
         <span className={cn('px-2.5 py-1 rounded-full text-xs font-semibold', STATUS_COLORS[appt.status])}>
@@ -196,7 +105,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 
         <section>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Cliente</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3">Cliente</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Nombre" value={appt.clientName} />
             <Field label="Teléfono" value={appt.clientPhone} />
@@ -204,7 +113,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Vehículo</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3">Vehículo</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Modelo" value={appt.carModel} />
             <Field label="VIN" value={appt.serialNumber} />
@@ -213,7 +122,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Servicio</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3">Servicio</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Asesor" value={appt.advisor} />
             <Field label="Técnico" value={appt.tecnico} />
@@ -226,7 +135,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Horario</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3">Horario</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Hora inicio" value={appt.startTime} />
             <Field label="Hora fin" value={appt.endTime} />
@@ -235,7 +144,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
         </section>
 
         <section>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Extras</p>
+          <p className="text-xs font-semibold text-gray-500 mb-3">Extras</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="App BYD" value={appt.appByd} />
             <Field label="Factura" value={appt.invoice} />
@@ -245,7 +154,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
 
         {appt.notes && (
           <section>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Notas</p>
+            <p className="text-xs font-semibold text-gray-500 mb-2">Notas</p>
             <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-3 py-2.5">{appt.notes}</p>
           </section>
         )}
@@ -266,14 +175,14 @@ function DeleteDialog({ appt, onCancel, onConfirm }: {
       <div className="modal-card bg-white rounded-2xl shadow-2xl w-80 p-6 space-y-4">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <Trash2 size={16} className="text-red-600" />
+            <Trash size={16} className="text-red-600" />
           </div>
           <div>
             <p className="font-semibold text-gray-800">¿Eliminar cita?</p>
             <p className="text-sm text-gray-500 mt-0.5">
-              {appt.clientName} · {appt.carModel}
+              {appt.clientName}, {appt.carModel}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">{appt.date} · {appt.startTime}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{appt.date}, {appt.startTime}</p>
           </div>
         </div>
         <div className="flex gap-3 justify-end pt-1">
@@ -295,109 +204,37 @@ function DeleteDialog({ appt, onCancel, onConfirm }: {
   );
 }
 
-// ── Sort icon ─────────────────────────────────────────────────────────────────
-
-function SortIcon({ col, sortCol, sortDir }: { col: ColKey; sortCol: ColKey | null; sortDir: 'asc' | 'desc' | null }) {
-  if (sortCol !== col) return <ChevronsUpDown size={13} className="text-gray-300 shrink-0" />;
-  return sortDir === 'asc'
-    ? <ChevronUp size={13} className="text-blue-500 shrink-0" />
-    : <ChevronDown size={13} className="text-blue-500 shrink-0" />;
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   appointments: Appointment[];
   onRefresh: () => void;
   searchQuery?: string;
+  /** When set, the table paginates internally (all rows are expected). */
+  pageSize?: number;
+  /** Footer rendered below the table with access to the table controls. */
+  renderFooter?: (controls: DataTableControls<Appointment, ColKey>) => React.ReactNode;
 }
 
-export default function AppointmentTable({ appointments, onRefresh, searchQuery }: Props) {
+export default function AppointmentTable({ appointments, onRefresh, searchQuery, pageSize, renderFooter }: Props) {
   const perms = usePermissions('gantt');
-  const [search, setSearch]                 = useState('');
-  const [sortCol, setSortCol]               = useState<ColKey | null>(null);
-  const [sortDir, setSortDir]               = useState<'asc' | 'desc' | null>(null);
-  const [colWidths, setColWidths]           = useState<Record<ColKey, number>>(
-    Object.fromEntries(COLUMNS.map((c) => [c.key, c.defaultWidth])) as Record<ColKey, number>,
-  );
-  const [filters, setFilters]               = useState<Partial<Record<ColKey, Set<string>>>>({});
-  const [openFilter, setOpenFilter]         = useState<FilterAnchor | null>(null);
-  const [viewAppt, setViewAppt]             = useState<Appointment | null>(null);
-  const [editAppt, setEditAppt]             = useState<Appointment | null>(null);
-  const [deleteTarget, setDeleteTarget]     = useState<Appointment | null>(null);
+  const [viewAppt, setViewAppt]       = useState<Appointment | null>(null);
+  const [editAppt, setEditAppt]       = useState<Appointment | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null);
 
-  const resizeRef = useRef<{ col: ColKey; startX: number; startW: number } | null>(null);
-
-  // ── Column resize ──────────────────────────────────────────────────────────
-
-  function startResize(col: ColKey, e: React.MouseEvent) {
-    e.preventDefault();
-    resizeRef.current = { col, startX: e.clientX, startW: colWidths[col] };
-
-    function onMove(ev: MouseEvent) {
-      if (!resizeRef.current) return;
-      const { col: c, startX, startW } = resizeRef.current;
-      setColWidths((prev) => ({ ...prev, [c]: Math.max(60, startW + ev.clientX - startX) }));
-    }
-
-    function onUp() {
-      resizeRef.current = null;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    }
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  }
-
-  // ── Sort ──────────────────────────────────────────────────────────────────
-
-  function handleSort(col: ColKey) {
-    if (sortCol === col) {
-      if (sortDir === 'asc') setSortDir('desc');
-      else { setSortCol(null); setSortDir(null); }
-    } else {
-      setSortCol(col);
-      setSortDir('asc');
-    }
-  }
-
-  // ── Filtered + sorted data ─────────────────────────────────────────────────
-
-  const rows = useMemo(() => {
-    let result = appointments;
-
-    // Global search (from prop) or internal search bar
-    const q = (searchQuery !== undefined ? searchQuery : search).trim().toLowerCase();
-    if (q) {
-      if (q === 'campaña' || q === 'campana') {
-        result = result.filter((a) => a.campaña === true);
-      } else {
-        result = result.filter((a) =>
-          [a.clientName, a.advisor, a.tecnico, a.carModel, a.date, a.startTime, a.endTime,
-           SERVICE_LABELS[a.serviceType], STATUS_LABELS[a.status], a.workOrder, a.serialNumber]
-            .some((v) => v?.toLowerCase().includes(q)),
-        );
-      }
-    }
-
-    // Column filters
-    for (const [col, vals] of Object.entries(filters)) {
-      if (!vals || vals.size === 0) continue;
-      result = result.filter((a) => vals.has(getColValue(a, col as ColKey)));
-    }
-
-    // Sort
-    if (sortCol && sortDir) {
-      result = [...result].sort((a, b) => {
-        const av = getColValue(a, sortCol);
-        const bv = getColValue(b, sortCol);
-        return sortDir === 'asc' ? av.localeCompare(bv, 'es') : bv.localeCompare(av, 'es');
-      });
-    }
-
-    return result;
-  }, [appointments, search, searchQuery, filters, sortCol, sortDir]);
+  const table = useDataTable<Appointment, ColKey>({
+    rows: appointments,
+    columns: COLUMNS,
+    getValue: getColValue,
+    getRowKey: (a) => a.id ?? `${a.date}-${a.startTime}-${a.serialNumber}`,
+    externalSearch: searchQuery,
+    pageSize,
+    getSearchText: (a) => [
+      a.clientName, a.advisor, a.tecnico, a.carModel, a.date, a.startTime, a.endTime,
+      SERVICE_LABELS[a.serviceType], STATUS_LABELS[a.status], a.workOrder, a.serialNumber,
+      a.campaña ? 'campaña campana' : '',
+    ].join(' '),
+  });
 
   // ── Delete ────────────────────────────────────────────────────────────────
 
@@ -414,251 +251,143 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery 
     }
   }
 
-  const activeFilterCount = Object.values(filters).filter((s) => s && s.size > 0).length;
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-3 relative">
-
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {searchQuery === undefined && (
-          <div className="relative flex-1 min-w-56 max-w-sm">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por cliente, asesor, modelo, hora…"
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X size={14} />
-              </button>
+      <DataTable<Appointment, ColKey>
+        controls={table}
+        actionsWidth={ACTIONS_W}
+        rowClassName={(appt) => cn('hover:bg-accent-50/40', viewAppt?.id === appt.id && 'bg-accent-50')}
+        empty={appointments.length === 0 ? 'No hay citas para esta fecha' : 'Sin resultados para los filtros aplicados'}
+        renderFooter={renderFooter}
+        renderToolbar={(t) => (
+          <div className="flex items-center gap-3 flex-wrap">
+            {t.searchable && (
+              <div className="relative flex-1 min-w-56 max-w-sm">
+                <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  value={t.search}
+                  onChange={(e) => t.setSearch(e.target.value)}
+                  placeholder="Buscar por cliente, asesor, modelo, hora…"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 text-sm text-gray-800 bg-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                />
+                {t.search && (
+                  <button onClick={() => t.setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
             )}
+
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              {t.activeFilterCount > 0 && (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-semibold">
+                  <Funnel size={11} />
+                  {t.activeFilterCount} filtro{t.activeFilterCount > 1 ? 's' : ''} activo{t.activeFilterCount > 1 ? 's' : ''}
+                  <button onClick={t.clearFilters} className="ml-1 hover:text-accent-900">
+                    <X size={11} />
+                  </button>
+                </span>
+              )}
+              <span className="text-xs text-gray-500 tabular">{t.filteredRows.length} / {appointments.length} citas</span>
+            </div>
           </div>
         )}
-
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          {activeFilterCount > 0 && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-              <Filter size={11} />
-              {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''} activo{activeFilterCount > 1 ? 's' : ''}
-              <button onClick={() => setFilters({})} className="ml-1 hover:text-blue-900">
-                <X size={11} />
-              </button>
-            </span>
-          )}
-          <span className="text-xs text-gray-400">{rows.length} / {appointments.length} citas</span>
-        </div>
-      </div>
-
-      {/* Table wrapper */}
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
-        <table className="table-fixed border-collapse w-full" style={{ minWidth: COLUMNS.reduce((s, c) => s + colWidths[c.key], 0) + ACTIONS_W }}>
-          <colgroup>
-            {COLUMNS.map((c) => <col key={c.key} style={{ width: colWidths[c.key] }} />)}
-            <col style={{ width: ACTIONS_W }} />
-          </colgroup>
-
-          <thead>
-            <tr className="bg-gray-50/70 border-b border-gray-200">
-              {COLUMNS.map((col) => {
-                const hasFilter = (filters[col.key]?.size ?? 0) > 0;
-                return (
-                  <th
-                    key={col.key}
-                    className="relative select-none text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 whitespace-nowrap border-r border-gray-200 last:border-r-0"
-                  >
-                    <div className="flex items-center gap-1.5 pr-5">
-                      {/* Sort trigger */}
-                      <button
-                        className="flex items-center gap-1 hover:text-gray-900 transition-colors"
-                        onClick={() => handleSort(col.key)}
-                      >
-                        {col.label}
-                        <SortIcon col={col.key} sortCol={sortCol} sortDir={sortDir} />
-                      </button>
-
-                      {/* Filter trigger */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (openFilter?.col === col.key) { setOpenFilter(null); return; }
-                          const r = e.currentTarget.getBoundingClientRect();
-                          // Evita que el dropdown salga por la derecha de la pantalla
-                          const left = Math.min(r.left, window.innerWidth - 236);
-                          setOpenFilter({ col: col.key, top: r.bottom + 4, left });
-                        }}
-                        className={cn(
-                          'p-0.5 rounded transition-colors',
-                          hasFilter ? 'text-blue-600' : 'text-gray-300 hover:text-gray-500',
-                        )}
-                      >
-                        <Filter size={11} />
-                      </button>
-                    </div>
-
-                    {/* Filter dropdown — renderizado en document.body vía portal */}
-                    {openFilter?.col === col.key && (
-                      <FilterDropdown
-                        col={col.key}
-                        top={openFilter.top}
-                        left={openFilter.left}
-                        appointments={appointments}
-                        active={filters[col.key] ?? new Set()}
-                        onClose={() => setOpenFilter(null)}
-                        onChange={(v) => setFilters((prev) => ({ ...prev, [col.key]: v }))}
-                      />
-                    )}
-
-                    {/* Resize handle */}
-                    <div
-                      className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 transition-colors"
-                      onMouseDown={(e) => startResize(col.key, e)}
-                    />
-                  </th>
-                );
-              })}
-
-              <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 text-center bg-gray-50/70">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-gray-100">
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={COLUMNS.length + 1} className="py-14 text-center text-sm text-gray-400">
-                  {appointments.length === 0 ? 'No hay citas para esta fecha' : 'Sin resultados para los filtros aplicados'}
-                </td>
-              </tr>
-            ) : (
-              rows.map((appt) => (
-                <tr
-                  key={appt.id}
-                  className={cn(
-                    'transition-colors hover:bg-blue-50/40',
-                    viewAppt?.id === appt.id && 'bg-blue-50',
+        renderCell={(appt, key) => {
+          switch (key) {
+            case 'date':
+              return appt.date;
+            case 'startTime':
+              return (
+                <span className="flex items-center gap-1 font-mono">
+                  <Clock size={11} className="text-gray-500 shrink-0" />
+                  {appt.startTime}–{appt.endTime}
+                </span>
+              );
+            case 'workOrder':
+              return appt.workOrder ? (
+                <span className="flex items-center gap-1">
+                  <FileText size={11} className="text-gray-500 shrink-0" />
+                  {appt.workOrder}
+                </span>
+              ) : <span className="text-gray-300">&nbsp;</span>;
+            case 'advisor':
+              return appt.advisor;
+            case 'tecnico':
+              return appt.tecnico;
+            case 'clientName':
+              return (
+                <>
+                  <p className="text-xs font-semibold text-gray-800 truncate">{appt.clientName}</p>
+                  {appt.clientPhone && (
+                    <p className="text-[11px] text-gray-500 flex items-center gap-0.5 mt-0.5">
+                      <Phone size={9} />{appt.clientPhone}
+                    </p>
                   )}
-                >
-                  {/* date */}
-                  <td className="px-3 py-2.5 text-xs text-gray-600 border-r border-gray-100 whitespace-nowrap truncate">
-                    {appt.date}
-                  </td>
-                  {/* hora */}
-                  <td className="px-3 py-2.5 text-xs text-gray-700 font-mono border-r border-gray-100 whitespace-nowrap truncate">
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} className="text-gray-400 shrink-0" />
-                      {appt.startTime}–{appt.endTime}
-                    </span>
-                  </td>
-                  {/* orden de trabajo */}
-                  <td className="px-3 py-2.5 border-r border-gray-100 truncate">
-                    {appt.workOrder
-                      ? (
-                        <span className="flex items-center gap-1 text-xs text-gray-700">
-                          <FileText size={11} className="text-gray-400 shrink-0" />
-                          {appt.workOrder}
-                        </span>
-                      )
-                      : <span className="text-gray-300 text-xs">&nbsp;</span>
-                    }
-                  </td>
-                  {/* asesor */}
-                  <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
-                    {appt.advisor}
-                  </td>
-                  {/* técnico */}
-                  <td className="px-3 py-2.5 text-xs text-gray-800 font-medium border-r border-gray-100 truncate">
-                    {appt.tecnico}
-                  </td>
-                  {/* cliente */}
-                  <td className="px-3 py-2.5 border-r border-gray-100 truncate">
-                    <p className="text-xs font-semibold text-gray-800 truncate">{appt.clientName}</p>
-                    {appt.clientPhone && (
-                      <p className="text-[11px] text-gray-500 flex items-center gap-0.5 mt-0.5">
-                        <Phone size={9} />{appt.clientPhone}
-                      </p>
-                    )}
-                  </td>
-                  {/* modelo */}
-                  <td className="px-3 py-2.5 text-xs text-gray-700 border-r border-gray-100 truncate">
-                    {appt.carModel}
-                  </td>
-                  {/* VIN */}
-                  <td className="px-3 py-2.5 text-xs font-mono text-gray-600 border-r border-gray-100 truncate">
-                    {appt.serialNumber}
-                  </td>
-                  {/* tipo */}
-                  <td className="px-3 py-2.5 border-r border-gray-100">
-                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border', SERVICE_COLORS_LIGHT[appt.serviceType])}>
-                      {SERVICE_LABELS[appt.serviceType]}
-                    </span>
-                  </td>
-                  {/* rampa */}
-                  <td className="px-3 py-2.5 text-xs text-gray-600 text-center border-r border-gray-100">
-                    {appt.ramp != null
-                      ? <span className="font-semibold text-gray-800">{appt.ramp}</span>
-                      : <span className="text-gray-300">&nbsp;</span>
-                    }
-                  </td>
-                  {/* estado */}
-                  <td className="px-3 py-2.5 border-r border-gray-100">
-                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap', STATUS_COLORS[appt.status])}>
-                      {STATUS_LABELS[appt.status]}
-                    </span>
-                  </td>
-                  {/* campaña */}
-                  <td className="px-3 py-2.5 text-center border-r border-gray-100">
-                    {appt.campaña
-                      ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">Campaña</span>
-                      : <span className="text-gray-300">&nbsp;</span>
-                    }
-                  </td>
-                  {/* acciones */}
-                  <td className="px-2 py-2 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => setViewAppt(viewAppt?.id === appt.id ? null : appt)}
-                        title="Ver detalle"
-                        className={cn(
-                          'p-1.5 rounded-lg transition-colors',
-                          viewAppt?.id === appt.id
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700',
-                        )}
-                      >
-                        <Eye size={14} />
-                      </button>
-                      {perms.update && (
-                        <button
-                          onClick={() => setEditAppt(appt)}
-                          title="Editar"
-                          className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                      )}
-                      {perms.delete && (
-                        <button
-                          onClick={() => setDeleteTarget(appt)}
-                          title="Eliminar"
-                          className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                </>
+              );
+            case 'carModel':
+              return appt.carModel;
+            case 'vin':
+              return <span className="font-mono text-gray-600">{appt.serialNumber}</span>;
+            case 'serviceType':
+              return (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap border bg-slate-50 text-slate-600 border-slate-200">
+                  {SERVICE_LABELS[appt.serviceType]}
+                </span>
+              );
+            case 'ramp':
+              return appt.ramp != null
+                ? <span className="font-semibold text-gray-800">{appt.ramp}</span>
+                : <span className="text-gray-300">&nbsp;</span>;
+            case 'status':
+              return (
+                <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap', STATUS_COLORS[appt.status])}>
+                  {STATUS_LABELS[appt.status]}
+                </span>
+              );
+            case 'campaña':
+              return appt.campaña
+                ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">Campaña</span>
+                : <span className="text-gray-300">&nbsp;</span>;
+          }
+        }}
+        renderActions={(appt) => (
+          <>
+            <button
+              onClick={() => setViewAppt(viewAppt?.id === appt.id ? null : appt)}
+              title="Ver detalle"
+              className={cn(
+                'p-1.5 rounded-lg transition-colors',
+                viewAppt?.id === appt.id
+                  ? 'bg-accent-100 text-accent-600'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
+              )}
+            >
+              <Eye size={14} />
+            </button>
+            {perms.update && (
+              <button
+                onClick={() => setEditAppt(appt)}
+                title="Editar"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-accent-50 hover:text-accent-600 transition-colors"
+              >
+                <PencilSimple size={14} />
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
+            {perms.delete && (
+              <button
+                onClick={() => setDeleteTarget(appt)}
+                title="Eliminar"
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <Trash size={14} />
+              </button>
+            )}
+          </>
+        )}
+      />
 
       {/* View panel */}
       {viewAppt && (

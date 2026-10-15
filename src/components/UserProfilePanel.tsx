@@ -7,7 +7,7 @@ import {
   updatePassword,
   updateProfile,
 } from 'firebase/auth';
-import { X, Save, Loader2, Eye, EyeOff } from 'lucide-react';
+import { X, FloppyDisk, CircleNotch, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useAuth } from '@/context/AuthContext';
 import { updateOwnProfile } from '@/lib/firestore/users';
 import { cn } from '@/lib/utils';
@@ -118,7 +118,7 @@ export default function UserProfilePanel({ onClose }: Props) {
             >
               {initials}
             </div>
-            <p className="text-xs text-gray-400">{user?.email}</p>
+            <p className="text-xs text-gray-500">{user?.email}</p>
           </div>
 
           {/* Color picker */}
@@ -148,7 +148,7 @@ export default function UserProfilePanel({ onClose }: Props) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Tu nombre"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent-400"
             />
           </div>
 
@@ -168,14 +168,14 @@ export default function UserProfilePanel({ onClose }: Props) {
                     value={currentPwd}
                     onChange={(e) => setCurrentPwd(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowCur((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
                   >
-                    {showCur ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showCur ? <EyeSlash size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
               </div>
@@ -189,14 +189,14 @@ export default function UserProfilePanel({ onClose }: Props) {
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
                     placeholder="Mínimo 6 caracteres"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowNew((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
                   >
-                    {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showNew ? <EyeSlash size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
               </div>
@@ -209,7 +209,7 @@ export default function UserProfilePanel({ onClose }: Props) {
                   value={confirmPwd}
                   onChange={(e) => setConfirmPwd(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-accent-400"
                 />
               </div>
             </div>
@@ -227,9 +227,9 @@ export default function UserProfilePanel({ onClose }: Props) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 disabled:opacity-60 transition-colors"
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? <CircleNotch size={14} className="animate-spin" /> : <FloppyDisk size={14} />}
             Guardar
           </button>
         </div>
