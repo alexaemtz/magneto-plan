@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatRamp, SERVICE_LABELS, cn } from '@/lib/utils';
+import { formatRamp, SERVICE_LABELS, todayISO, cn } from '@/lib/utils';
 import { Appointment } from '@/types';
 import { deleteAppointment } from '@/lib/firestore/appointments';
 import AppointmentForm from './AppointmentForm';
 import toast from 'react-hot-toast';
 import {
   MagnifyingGlass, PencilSimple, Trash, Eye, X,
-  Funnel, Phone, Clock, FileText,
+  Funnel, Phone, Clock, FileText, FileXls,
 } from '@phosphor-icons/react';
 import {
   APPOINTMENT_STATUS_LABELS as STATUS_LABELS,
@@ -50,6 +50,98 @@ function getColValue(a: Appointment, key: ColKey): string {
     case 'status':      return STATUS_LABELS[a.status] ?? a.status;
     case 'workOrder':   return a.workOrder ?? '';
     case 'campaña':     return a.campaña ? 'Sí' : 'No';
+  }
+}
+
+// ── Excel export ──────────────────────────────────────────────────────────────
+
+/** Parses a 'YYYY-MM-DD' string into a local Date (avoids UTC off-by-one). */
+function parseISODate(iso: string): Date | string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+async function exportAppointmentsToExcel(rows: Appointment[]) {
+  if (rows.length === 0) {
+    toast.error('No hay citas para exportar');
+    return;
+  }
+  try {
+    const { Workbook } = await import('exceljs');
+    const wb = new Workbook();
+    const ws = wb.addWorksheet('Citas');
+
+    ws.columns = [
+      { header: 'Fecha',                  key: 'date',             width: 12, style: { numFmt: 'dd/mm/yyyy' } },
+      { header: 'Hora inicio',            key: 'startTime',        width: 11 },
+      { header: 'Hora fin',               key: 'endTime',          width: 11 },
+      { header: 'Horas de trabajo',       key: 'workHours',        width: 15 },
+      { header: 'Orden de trabajo',       key: 'workOrder',        width: 18 },
+      { header: 'Asesor',                 key: 'advisor',          width: 20 },
+      { header: 'Técnico',                key: 'tecnico',          width: 20 },
+      { header: 'Cliente',                key: 'clientName',       width: 24 },
+      { header: 'Teléfono',               key: 'clientPhone',      width: 16 },
+      { header: 'Modelo',                 key: 'carModel',         width: 18 },
+      { header: 'VIN',                    key: 'serialNumber',     width: 22 },
+      { header: 'Kilómetros',             key: 'km',               width: 12 },
+      { header: 'Tipo de servicio',       key: 'serviceType',      width: 22 },
+      { header: 'Rampa',                  key: 'ramp',             width: 12 },
+      { header: 'Estado',                 key: 'status',           width: 18 },
+      { header: 'Nivel de mantenimiento', key: 'maintenanceLevel', width: 22 },
+      { header: 'Tipo de garantía',       key: 'warrantyType',     width: 20 },
+      { header: 'Tipo de diagnóstico',    key: 'diagnosisType',    width: 20 },
+      { header: 'App BYD',                key: 'appByd',           width: 10 },
+      { header: 'Factura',                key: 'invoice',          width: 10 },
+      { header: 'Campaña',                key: 'campaña',          width: 10 },
+      { header: 'Notas',                  key: 'notes',            width: 40 },
+    ];
+
+    ws.addRows(rows.map((a) => ({
+      date:             parseISODate(a.date),
+      startTime:        a.startTime,
+      endTime:          a.endTime,
+      workHours:        a.workHours ?? '',
+      workOrder:        a.workOrder ?? '',
+      advisor:          a.advisor ?? '',
+      tecnico:          a.tecnico ?? '',
+      clientName:       a.clientName ?? '',
+      clientPhone:      a.clientPhone ?? '',
+      carModel:         a.carModel ?? '',
+      serialNumber:     a.serialNumber ?? '',
+      km:               a.km ?? '',
+      serviceType:      SERVICE_LABELS[a.serviceType] ?? a.serviceType,
+      ramp:             formatRamp(a.ramp),
+      status:           STATUS_LABELS[a.status] ?? a.status,
+      maintenanceLevel: a.maintenanceLevel != null ? `S${a.maintenanceLevel}` : '',
+      warrantyType:     a.warrantyType ?? '',
+      diagnosisType:    a.diagnosisType ?? '',
+      appByd:           a.appByd ? 'Sí' : 'No',
+      invoice:          a.invoice ? 'Sí' : 'No',
+      campaña:          a.campaña ? 'Sí' : 'No',
+      notes:            a.notes ?? '',
+    })));
+
+    const header = ws.getRow(1);
+    header.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    header.alignment = { vertical: 'middle' };
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `citas_${todayISO()}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Se exportaron ${rows.length} cita${rows.length !== 1 ? 's' : ''}`);
+  } catch {
+    toast.error('Error al exportar a Excel');
   }
 }
 
@@ -214,9 +306,11 @@ interface Props {
   pageSize?: number;
   /** Footer rendered below the table with access to the table controls. */
   renderFooter?: (controls: DataTableControls<Appointment, ColKey>) => React.ReactNode;
+  /** Shows the "Exportar a Excel" button, exporting the currently filtered rows. */
+  exportable?: boolean;
 }
 
-export default function AppointmentTable({ appointments, onRefresh, searchQuery, pageSize, renderFooter }: Props) {
+export default function AppointmentTable({ appointments, onRefresh, searchQuery, pageSize, renderFooter, exportable }: Props) {
   const perms = usePermissions('gantt');
   const [viewAppt, setViewAppt]       = useState<Appointment | null>(null);
   const [editAppt, setEditAppt]       = useState<Appointment | null>(null);
@@ -292,6 +386,18 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery,
               )}
               <span className="text-xs text-gray-500 tabular">{t.filteredRows.length} / {appointments.length} citas</span>
             </div>
+
+            {exportable && (
+              <button
+                onClick={() => exportAppointmentsToExcel(t.filteredRows)}
+                disabled={t.filteredRows.length === 0}
+                title="Exportar a Excel"
+                className="ml-auto flex items-center gap-2 px-3.5 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-accent-600 transition-all"
+              >
+                <FileXls size={15} />
+                Exportar a Excel
+              </button>
+            )}
           </div>
         )}
         renderCell={(appt, key) => {

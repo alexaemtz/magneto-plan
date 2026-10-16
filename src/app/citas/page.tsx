@@ -59,6 +59,7 @@ export default function CitasPage() {
             onRefresh={handleRefresh}
             searchQuery=""
             pageSize={pageSize}
+            exportable
             renderFooter={(t) => (
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3 text-sm text-gray-500">
