@@ -59,12 +59,13 @@ export function formatRamp(ramp: Ramp | null): string {
 
 export function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-');
-  const months = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-  ];
-  return `${parseInt(d)} de ${months[parseInt(m) - 1]} de ${y}`;
+  return `${parseInt(d)} de ${MONTH_NAMES[parseInt(m) - 1].toLowerCase()} de ${y}`;
 }
+
+export const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
 
 export function isoToDisplay(iso: string): string {
   const [y, m, d] = iso.split('-');

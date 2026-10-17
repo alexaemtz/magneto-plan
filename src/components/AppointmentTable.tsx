@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
-import { formatRamp, SERVICE_LABELS, todayISO, cn } from '@/lib/utils';
+import { formatRamp, SERVICE_LABELS, todayISO, isoToDisplay, cn } from '@/lib/utils';
 import { Appointment } from '@/types';
 import { deleteAppointment } from '@/lib/firestore/appointments';
 import AppointmentForm from './AppointmentForm';
@@ -20,7 +20,7 @@ import { DataTable, useDataTable, type DataTableColumn, type DataTableControls }
 type ColKey = 'date' | 'startTime' | 'advisor' | 'tecnico' | 'clientName' | 'carModel' | 'vin' | 'serviceType' | 'ramp' | 'status' | 'workOrder' | 'campaña';
 
 const COLUMNS: DataTableColumn<ColKey>[] = [
-  { key: 'date',        label: 'Fecha',            defaultWidth: 110 },
+  { key: 'date',        label: 'Fecha',            defaultWidth: 110, filterType: 'date' },
   { key: 'startTime',   label: 'Hora',             defaultWidth: 110 },
   { key: 'workOrder',   label: 'Orden de trabajo', defaultWidth: 130 },
   { key: 'advisor',     label: 'Asesor',           defaultWidth: 135 },
@@ -165,7 +165,7 @@ function ViewPanel({ appt, onClose, onEdit, canEdit }: { appt: Appointment; onCl
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/60">
         <div>
-          <p className="text-xs text-gray-500 font-medium">{appt.date}</p>
+          <p className="text-xs text-gray-500 font-medium">{isoToDisplay(appt.date)}</p>
           <p className="font-semibold text-gray-800 text-sm leading-tight mt-0.5">{appt.clientName}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -274,7 +274,7 @@ function DeleteDialog({ appt, onCancel, onConfirm }: {
             <p className="text-sm text-gray-500 mt-0.5">
               {appt.clientName}, {appt.carModel}
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">{appt.date}, {appt.startTime}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{isoToDisplay(appt.date)}, {appt.startTime}</p>
           </div>
         </div>
         <div className="flex gap-3 justify-end pt-1">
@@ -387,7 +387,7 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery,
               <span className="text-xs text-gray-500 tabular">{t.filteredRows.length} / {appointments.length} citas</span>
             </div>
 
-            {exportable && (
+            {exportable && perms.export && (
               <button
                 onClick={() => exportAppointmentsToExcel(t.filteredRows)}
                 disabled={t.filteredRows.length === 0}
@@ -403,7 +403,7 @@ export default function AppointmentTable({ appointments, onRefresh, searchQuery,
         renderCell={(appt, key) => {
           switch (key) {
             case 'date':
-              return appt.date;
+              return isoToDisplay(appt.date);
             case 'startTime':
               return (
                 <span className="flex items-center gap-1 font-mono">

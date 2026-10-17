@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { PageKey, PagePermissions, DEFAULT_PAGE_PERMISSIONS } from '@/types';
 
-const FULL: PagePermissions = { read: true, create: true, update: true, delete: true };
+const FULL: PagePermissions = { read: true, create: true, update: true, delete: true, export: true };
 
 export function usePermissions(page: PageKey): PagePermissions {
   const { role, permissions } = useAuth();

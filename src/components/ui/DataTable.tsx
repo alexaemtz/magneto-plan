@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CaretUp, CaretDown, CaretUpDown, Funnel, MagnifyingGlass,
+  CaretUp, CaretDown, CaretUpDown, CaretRight, Funnel, MagnifyingGlass,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { cn, MONTH_NAMES } from '@/lib/utils';
 import { TableSkeleton } from './primitives';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -20,6 +20,9 @@ export interface DataTableColumn<K extends string> {
   label: string;
   defaultWidth: number;
   align?: 'left' | 'center';
+  /** Filter UI style. `date` renders a year → month tree (Excel style) and
+   *  filters rows by `YYYY-MM`. Defaults to a flat value list. */
+  filterType?: 'list' | 'date';
 }
 
 export interface DataTableControls<T, K extends string> {
@@ -97,6 +100,18 @@ export function useDataTable<T, K extends string>({
   const query = (searchable ? search : externalSearch ?? '').trim().toLowerCase();
   const sortValue = getSortValue ?? getValue;
 
+  const dateCols = useMemo(
+    () => new Set(columns.filter((c) => c.filterType === 'date').map((c) => c.key)),
+    [columns],
+  );
+  const filterKey = useCallback(
+    (row: T, col: K): string => {
+      const raw = getValue(row, col);
+      return dateCols.has(col) ? raw.slice(0, 7) : raw;
+    },
+    [dateCols, getValue],
+  );
+
   const filteredRows = useMemo(() => {
     let result = rows;
 
@@ -111,7 +126,7 @@ export function useDataTable<T, K extends string>({
 
     for (const [col, values] of Object.entries(filters) as [K, Set<string>][]) {
       if (!values || values.size === 0) continue;
-      result = result.filter((row) => values.has(getValue(row, col)));
+      result = result.filter((row) => values.has(filterKey(row, col)));
     }
 
     if (sortCol && sortDir) {
@@ -125,7 +140,7 @@ export function useDataTable<T, K extends string>({
     }
 
     return result;
-  }, [rows, columns, getValue, sortValue, getSearchText, query, filters, sortCol, sortDir]);
+  }, [rows, columns, getValue, sortValue, getSearchText, query, filters, sortCol, sortDir, filterKey]);
 
   const totalPages = pageSize ? Math.max(1, Math.ceil(filteredRows.length / pageSize)) : 1;
   const safePage = Math.min(currentPage, totalPages);
@@ -174,7 +189,8 @@ export function useDataTable<T, K extends string>({
   }
 
   function filterValues(col: K) {
-    return [...new Set(rows.map((row) => getValue(row, col)))].sort();
+    const unique = [...new Set(rows.map((row) => filterKey(row, col)))];
+    return dateCols.has(col) ? unique.sort().reverse() : unique.sort();
   }
 
   return {
@@ -216,6 +232,7 @@ function FilterDropdown<T, K extends string>({ controls, col, top, left }: {
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [term, setTerm] = useState('');
+  const isDate = controls.columns.find((c) => c.key === col)?.filterType === 'date';
   const unique = useMemo(() => controls.filterValues(col), [controls, col]);
   const active = controls.filters[col] ?? new Set<string>();
   const visible = term.trim()
@@ -250,36 +267,140 @@ function FilterDropdown<T, K extends string>({ controls, col, top, left }: {
           </button>
         )}
       </div>
-      <div className="px-3.5 py-2 border-b border-gray-100 shrink-0">
-        <div className="relative">
-          <MagnifyingGlass size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-          <input
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Buscar…"
-            autoFocus
-            className="w-full pl-8 pr-2.5 py-1.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-accent-400"
-          />
-        </div>
-      </div>
-      <div className="overflow-y-auto flex-1">
-        {visible.length === 0
-          ? <p className="px-3.5 py-2 text-sm text-gray-500">Sin coincidencias</p>
-          : visible.map((v) => (
-            <label key={v} className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer">
+
+      {isDate ? (
+        <DateFilterTree values={unique} active={active} onToggle={toggle} onToggleMany={(vs, on) => {
+          const next = new Set(active);
+          for (const v of vs) { if (on) next.add(v); else next.delete(v); }
+          controls.setFilter(col, next);
+        }} />
+      ) : (
+        <>
+          <div className="px-3.5 py-2 border-b border-gray-100 shrink-0">
+            <div className="relative">
+              <MagnifyingGlass size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               <input
-                type="checkbox"
-                className="rounded border-gray-300 text-accent-600 w-4 h-4"
-                checked={active.has(v)}
-                onChange={() => toggle(v)}
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                placeholder="Buscar…"
+                autoFocus
+                className="w-full pl-8 pr-2.5 py-1.5 text-sm rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-accent-400"
               />
-              <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
-            </label>
-          ))
-        }
-      </div>
+            </div>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            {visible.length === 0
+              ? <p className="px-3.5 py-2 text-sm text-gray-500">Sin coincidencias</p>
+              : visible.map((v) => (
+                <label key={v} className="flex items-center gap-2.5 px-3.5 py-2 hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-accent-600 w-4 h-4"
+                    checked={active.has(v)}
+                    onChange={() => toggle(v)}
+                  />
+                  <span className="text-sm text-gray-700 truncate">{v || 'Sin valor'}</span>
+                </label>
+              ))
+            }
+          </div>
+        </>
+      )}
     </div>,
     document.body,
+  );
+}
+
+/* ── Date filter tree (year → month) ──────────────────────────────────────── */
+
+function DateFilterTree({ values, active, onToggle, onToggleMany }: {
+  values: string[];
+  active: Set<string>;
+  onToggle: (v: string) => void;
+  onToggleMany: (values: string[], on: boolean) => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const years = useMemo(() => {
+    const map = new Map<string, number[]>();
+    for (const v of values) {
+      const [y, m] = v.split('-');
+      if (!y || !m) continue;
+      const months = map.get(y) ?? [];
+      months.push(Number(m));
+      map.set(y, months);
+    }
+    return [...map.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([year, months]) => ({ year, months: months.sort((a, b) => a - b) }));
+  }, [values]);
+
+  function toggleYear(year: string, months: number[]) {
+    const keys = months.map((m) => `${year}-${String(m).padStart(2, '0')}`);
+    const allOn = keys.every((k) => active.has(k));
+    onToggleMany(keys, !allOn);
+  }
+
+  if (years.length === 0) {
+    return <p className="px-3.5 py-2 text-sm text-gray-500">Sin fechas</p>;
+  }
+
+  return (
+    <div className="overflow-y-auto flex-1">
+      {years.map(({ year, months }) => {
+        const keys = months.map((m) => `${year}-${String(m).padStart(2, '0')}`);
+        const selected = keys.filter((k) => active.has(k)).length;
+        const isOpen = !collapsed.has(year);
+        return (
+          <div key={year}>
+            <div className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50">
+              <button
+                onClick={() => setCollapsed((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(year)) next.delete(year); else next.add(year);
+                  return next;
+                })}
+                className="p-0.5 text-gray-400 hover:text-gray-600 shrink-0"
+                aria-label={isOpen ? 'Contraer' : 'Expandir'}
+              >
+                {isOpen ? <CaretDown size={12} /> : <CaretRight size={12} />}
+              </button>
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-accent-600 w-4 h-4 cursor-pointer"
+                checked={selected === keys.length}
+                ref={(el) => { if (el) el.indeterminate = selected > 0 && selected < keys.length; }}
+                onChange={() => onToggleMany(keys, selected !== keys.length)}
+              />
+              <button
+                onClick={() => toggleYear(year, months)}
+                className="text-sm font-semibold text-gray-800 hover:text-gray-900 text-left flex-1"
+              >
+                {year}
+              </button>
+            </div>
+            {isOpen && (
+              <div className="pl-6">
+                {months.map((m) => {
+                  const key = `${year}-${String(m).padStart(2, '0')}`;
+                  return (
+                    <label key={key} className="flex items-center gap-2.5 pl-3 pr-3.5 py-1.5 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-accent-600 w-4 h-4"
+                        checked={active.has(key)}
+                        onChange={() => onToggle(key)}
+                      />
+                      <span className="text-sm text-gray-700 truncate">{MONTH_NAMES[m - 1]}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

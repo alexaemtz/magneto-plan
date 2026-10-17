@@ -154,6 +154,7 @@ export interface PagePermissions {
   create: boolean;
   update: boolean;
   delete: boolean;
+  export: boolean;
 }
 
 export const PAGE_LABELS: Record<PageKey, string> = {
@@ -165,11 +166,11 @@ export const PAGE_LABELS: Record<PageKey, string> = {
 };
 
 export const DEFAULT_PAGE_PERMISSIONS: Record<PageKey, PagePermissions> = {
-  dashboard:       { read: true, create: false, update: false, delete: false },
-  gantt:           { read: true, create: false, update: false, delete: false },
-  indicador:       { read: true, create: false, update: false, delete: false },
-  casosPendientes: { read: true, create: false, update: false, delete: false },
-  refacciones:     { read: true, create: false, update: false, delete: false },
+  dashboard:       { read: true, create: false, update: false, delete: false, export: false },
+  gantt:           { read: true, create: false, update: false, delete: false, export: false },
+  indicador:       { read: true, create: false, update: false, delete: false, export: false },
+  casosPendientes: { read: true, create: false, update: false, delete: false, export: false },
+  refacciones:     { read: true, create: false, update: false, delete: false, export: false },
 };
 
 export interface UserProfile {

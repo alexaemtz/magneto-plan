@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getInitials } from '@/components/UserProfilePanel';
@@ -12,7 +13,6 @@ import {
   ClipboardText,
   Gear,
   SignOut,
-  Wrench,
   CaretLeft,
   CaretRight,
   ShieldCheck,
@@ -68,9 +68,14 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
 
         {/* Logo */}
         <div className="flex h-[72px] items-center border-b border-white/[0.07] px-3.5 overflow-hidden">
-          <div className="w-9 h-9 rounded-[10px] bg-accent-600 flex items-center justify-center shrink-0">
-            <Wrench size={18} className="text-white" />
-          </div>
+          <Image
+            src="/byd-logo.png"
+            alt="BYD Hermosillo"
+            width={36}
+            height={36}
+            priority
+            className="w-9 h-9 rounded-[10px] object-cover shrink-0 shadow-sm ring-1 ring-white/10"
+          />
           <div className={cn(
             'ml-3 overflow-hidden transition-[max-width,opacity] duration-300 ease-out',
             collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100',

@@ -16,7 +16,7 @@ import { PageHeader, TableSkeleton } from '@/components/ui/primitives';
 
 const PAGES: PageKey[] = ['dashboard', 'gantt', 'casosPendientes', 'refacciones'];
 const PERM_LABELS: Record<keyof PagePermissions, string> = {
-  read: 'Ver', create: 'Crear', update: 'Editar', delete: 'Eliminar',
+  read: 'Ver', create: 'Crear', update: 'Editar', delete: 'Eliminar', export: 'Exportar',
 };
 
 // ── Permission Matrix Modal ───────────────────────────────────────────────────
@@ -282,7 +282,7 @@ export default function AdminUsuariosPage() {
                               {PAGE_LABELS[page]}
                             </span>
                           ))}
-                          {!PAGES.some((p) => u.permissions?.[p]?.create || u.permissions?.[p]?.update || u.permissions?.[p]?.delete) && (
+                          {!PAGES.some((p) => u.permissions?.[p]?.create || u.permissions?.[p]?.update || u.permissions?.[p]?.delete || u.permissions?.[p]?.export) && (
                             <span className="text-[11px] text-gray-500">Solo lectura</span>
                           )}
                         </div>
